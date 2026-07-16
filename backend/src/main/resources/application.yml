@@ -14,3 +14,14 @@ spring:
 
 server:
   port: 8080
+
+auth:
+  jwt:
+    # HS256 signing secret. Dev default is NON-SECRET; override with JWT_SECRET in real envs.
+    secret: ${JWT_SECRET:dev-secret-change-me-please-at-least-32-bytes-long-000000}
+    access-ttl: PT15M
+    refresh-ttl: P30D
+  otp:
+    ttl: PT5M
+    resend-interval: PT30S
+    max-attempts: 5

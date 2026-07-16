@@ -86,9 +86,9 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 
 ## Phase 1 — Authentication (phone-first, OTP stubbed)
 
-- [ ] User + auth data model; Flyway migration
-- [ ] Phone signup: request OTP (dev = code logged/returned, no real SMS), verify OTP -> account
-- [ ] JWT access + refresh tokens; refresh endpoint; secure token handling
+- [x] User + auth data model; Flyway migration
+- [x] Phone signup: request OTP (dev = code logged/returned, no real SMS), verify OTP -> account
+- [x] JWT access + refresh tokens; refresh endpoint; secure token handling
 - [ ] Profile: name, photo (upload -> storage), bio, languages; `GET/PUT /api/me`
 - [ ] Android: phone entry -> OTP screen -> verified -> token stored -> profile setup
 - [ ] End to end: a user signs up on the phone and stays logged in
@@ -148,5 +148,10 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 
 ## Working log (append newest at top)
 
+- 2026-07-16 — Phase 1 backend auth: phone-OTP request/verify (BCrypt-hashed codes, 5-min TTL,
+  30s resend throttle, 5-attempt lockout), JWT access (15m) + rotating refresh (30d, SHA-256
+  hashed) with refresh endpoint; JWT security filter (stateless; `/api/auth/**` + `/api/health`
+  public). OTP delivery stubbed behind `OtpSender` (`DevOtpSender` logs; `devCode` returned only
+  under the `dev` profile). Verified end-to-end via curl.
 - _(date)_ — Plan created. v1 scope locked (auth/marketplace/simple-match/chat/ratings);
   admin/live-GPS/route-overlap/wallet/real-SMS deferred. Next: Phase 0.
