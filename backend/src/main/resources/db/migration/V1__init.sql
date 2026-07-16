@@ -1,0 +1,1 @@
+-- Baseline migration. Establishes Flyway history; schema objects arrive with their domains.

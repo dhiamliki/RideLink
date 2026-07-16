@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: ridelink-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ridelink}
+      POSTGRES_USER: ${POSTGRES_USER:-ridelink}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ridelink}
+    ports:
+      - "5433:5432"
+    volumes:
+      - ridelink-pgdata:/var/lib/postgresql/data
+
+volumes:
+  ridelink-pgdata:
