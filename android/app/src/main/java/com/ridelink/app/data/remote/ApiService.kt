@@ -4,6 +4,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Query
 
 data class HealthResponse(val status: String)
 
@@ -26,4 +27,33 @@ interface ApiService {
 
     @PUT("api/me")
     suspend fun updateProfile(@Body body: UpdateProfileRequest): ProfileResponse
+
+    @GET("api/offers")
+    suspend fun offers(
+        @Query("originCity") originCity: String? = null,
+        @Query("destCity") destCity: String? = null,
+        @Query("date") date: String? = null,
+        @Query("minSeats") minSeats: Int? = null,
+        @Query("maxPrice") maxPrice: Double? = null,
+        @Query("smokingAllowed") smokingAllowed: Boolean? = null,
+        @Query("petsAllowed") petsAllowed: Boolean? = null,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20,
+    ): PagedResponse<OfferItem>
+
+    @GET("api/requests")
+    suspend fun requests(
+        @Query("originCity") originCity: String? = null,
+        @Query("destCity") destCity: String? = null,
+        @Query("date") date: String? = null,
+        @Query("minSeats") minSeats: Int? = null,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20,
+    ): PagedResponse<RequestItem>
+
+    @POST("api/offers")
+    suspend fun createOffer(@Body body: CreateOfferBody): OfferItem
+
+    @POST("api/requests")
+    suspend fun createRequest(@Body body: CreateRequestBody): RequestItem
 }

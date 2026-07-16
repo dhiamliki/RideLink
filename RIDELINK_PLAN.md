@@ -101,7 +101,8 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 - [x] Simple `MatchingStrategy`: rank results by route similarity + date/time + rating
 - [x] Booking: passenger requests a seat -> driver accepts/declines -> seats decrement atomically
 - [x] Contact revealed on accept; booking states (requested/accepted/declined/cancelled)
-- [ ] Android screens: feed (ranked), post offer, post request, detail, request/accept flow
+- [~] Android screens: feed (ranked), post offer, post request, detail, request/accept flow
+      (feed + post offer/request done in 2d; detail + request/accept flow are 2e)
 - [ ] End to end: post -> discover -> request -> accept -> confirmed, on the phone
 
 ## Phase 3 — Trust (minimum viable)
@@ -148,6 +149,16 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 
 ## Working log (append newest at top)
 
+- 2026-07-16 — Phase 2 Android feed + create screens: brand indigo (#5B4FE0) applied as Compose
+  theme primary. Bottom-nav shell (Home/Requests/Profile + Post FAB). Feed lists ranked offers
+  with driver avatar, route, date/time, seats, price, and a match badge; search bar
+  (from/to/date) + filters bottom sheet (max price, min seats) + pull-to-refresh. Requests tab
+  lists ride requests symmetrically. Post -> chooser -> Create Offer / Create Request with a
+  hardcoded Tunisian-city picker (name+lat/lon), date/time pickers, seats stepper, toggles; on
+  submit returns to the feed/requests tab (reloads on entry). Loading/empty/error states
+  throughout. Reuses the existing Retrofit/auth interceptor. `./gradlew assembleDebug` clean.
+  (Detail + request/accept UI is 2e.) Note: modeled the real backend JSON — nested
+  origin/destination objects + PagedResponse — not the flattened shape sketched in the brief.
 - 2026-07-16 — Phase 2 booking handshake (Flyway V4 `booking`): request -> accept/decline ->
   cancel, all token-gated with owner/passenger checks. Seats change only on ACCEPT (and restore
   on cancel of an accepted booking) via an atomic conditional UPDATE on `ride_offer`
