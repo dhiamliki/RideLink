@@ -13,9 +13,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.ridelink.app.ui.bookings.MyBookingsScreen
+import com.ridelink.app.ui.bookings.OfferRequestsScreen
 import com.ridelink.app.ui.create.CreateOfferScreen
 import com.ridelink.app.ui.create.CreateRequestScreen
 import com.ridelink.app.ui.create.PostChooserScreen
+import com.ridelink.app.ui.detail.RideDetailScreen
 import com.ridelink.app.ui.main.MainScreen
 import com.ridelink.app.ui.otp.OtpScreen
 import com.ridelink.app.ui.otp.PostLogin
@@ -33,6 +36,12 @@ object Routes {
     const val POST_CHOOSER = "post"
     const val CREATE_OFFER = "createOffer"
     const val CREATE_REQUEST = "createRequest"
+    const val RIDE_DETAIL = "offer/{offerId}"
+    const val OFFER_REQUESTS = "offer/{offerId}/requests"
+    const val MY_BOOKINGS = "myBookings"
+
+    fun rideDetail(offerId: String) = "offer/$offerId"
+    fun offerRequests(offerId: String) = "offer/$offerId/requests"
 
     // phoneNumber is placed raw in the path segment; a literal '+' is valid there and is not
     // decoded to a space (that only happens in query strings).
@@ -107,6 +116,8 @@ fun AppNavHost(rootViewModel: RootViewModel = hiltViewModel()) {
                 selectedTab = mainTab,
                 onSelectTab = { mainTab = it },
                 onPost = { navController.navigate(Routes.POST_CHOOSER) },
+                onOpenOffer = { navController.navigate(Routes.rideDetail(it)) },
+                onOpenMyBookings = { navController.navigate(Routes.MY_BOOKINGS) },
                 onLoggedOut = {
                     navController.navigate(Routes.PHONE) {
                         popUpTo(navController.graph.id) { inclusive = true }
@@ -141,6 +152,27 @@ fun AppNavHost(rootViewModel: RootViewModel = hiltViewModel()) {
                 },
                 onBack = { navController.popBackStack() },
             )
+        }
+
+        composable(
+            route = Routes.RIDE_DETAIL,
+            arguments = listOf(navArgument("offerId") { type = NavType.StringType }),
+        ) {
+            RideDetailScreen(
+                onBack = { navController.popBackStack() },
+                onViewRequests = { navController.navigate(Routes.offerRequests(it)) },
+            )
+        }
+
+        composable(
+            route = Routes.OFFER_REQUESTS,
+            arguments = listOf(navArgument("offerId") { type = NavType.StringType }),
+        ) {
+            OfferRequestsScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(Routes.MY_BOOKINGS) {
+            MyBookingsScreen(onBack = { navController.popBackStack() })
         }
     }
 }

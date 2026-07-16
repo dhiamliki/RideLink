@@ -101,8 +101,8 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 - [x] Simple `MatchingStrategy`: rank results by route similarity + date/time + rating
 - [x] Booking: passenger requests a seat -> driver accepts/declines -> seats decrement atomically
 - [x] Contact revealed on accept; booking states (requested/accepted/declined/cancelled)
-- [~] Android screens: feed (ranked), post offer, post request, detail, request/accept flow
-      (feed + post offer/request done in 2d; detail + request/accept flow are 2e)
+- [x] Android screens: feed (ranked), post offer, post request, detail, request/accept flow
+      (feed + post offer/request done in 2d; detail + request/accept flow done in 2e)
 - [ ] End to end: post -> discover -> request -> accept -> confirmed, on the phone
 
 ## Phase 3 — Trust (minimum viable)
@@ -149,6 +149,19 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 
 ## Working log (append newest at top)
 
+- 2026-07-16 — Phase 2 Android ride detail + booking flow (2e): tap a feed card → ride detail
+  (full route/date/time/seats/price/notes/smoking-pets/driver+rating). "Request a seat" with a
+  seats selector when >1 available → POST booking → "requested" banner; 409 (full/already booked)
+  and 403 (own ride) handled as terminal blocked states, and owners see "View requests on this
+  ride" instead of the button. My bookings (passenger, from Profile) lists GET /bookings/mine with
+  status pill; on ACCEPTED reveals the driver's phone + coordinate note; cancel refreshes the list.
+  Requests-on-my-ride (driver, from the owner's ride detail) lists GET /offers/{id}/bookings with
+  Accept/Decline per request → refresh reflects seats; passenger contact shown on accept.
+  Loading/empty/error + pull-to-refresh throughout; reuses the Retrofit/auth interceptor and the
+  indigo theme. Manual two-user test: A posts an offer; B opens it → Request a seat; A opens
+  requests on the ride → Accept; both see each other's contact; B cancels → seats restore.
+  `./gradlew assembleDebug` clean (pinned Temurin JDK). Booking-list DTOs modeled leniently
+  (defaulted/nullable) against the documented contract since backend source wasn't read.
 - 2026-07-16 — Phase 2 Android feed + create screens: brand indigo (#5B4FE0) applied as Compose
   theme primary. Bottom-nav shell (Home/Requests/Profile + Post FAB). Feed lists ranked offers
   with driver avatar, route, date/time, seats, price, and a match badge; search bar

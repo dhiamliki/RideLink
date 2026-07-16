@@ -1,5 +1,6 @@
 package com.ridelink.app.ui.feed
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -43,7 +44,10 @@ import com.ridelink.app.ui.common.MatchBadge
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FeedScreen(viewModel: FeedViewModel = hiltViewModel()) {
+fun FeedScreen(
+    onOpenOffer: (String) -> Unit,
+    viewModel: FeedViewModel = hiltViewModel(),
+) {
     val uiState by viewModel.uiState.collectAsState()
     val filters by viewModel.filters.collectAsState()
     val refreshing by viewModel.refreshing.collectAsState()
@@ -79,7 +83,7 @@ fun FeedScreen(viewModel: FeedViewModel = hiltViewModel()) {
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            items(state.offers, key = { it.id }) { OfferCard(it) }
+                            items(state.offers, key = { it.id }) { OfferCard(it, onOpenOffer) }
                         }
                     }
             }
@@ -178,8 +182,12 @@ private fun FiltersSheet(
 }
 
 @Composable
-private fun OfferCard(offer: OfferItem) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+private fun OfferCard(offer: OfferItem, onOpenOffer: (String) -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onOpenOffer(offer.id) },
+    ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
                 Modifier.fillMaxWidth(),

@@ -22,6 +22,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @Composable
 fun HomeScreen(
     onLoggedOut: () -> Unit,
+    onOpenMyBookings: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -51,6 +52,13 @@ fun HomeScreen(
                 Text(state.message, color = MaterialTheme.colorScheme.error)
                 Button(onClick = viewModel::load) { Text("Retry") }
             }
+        }
+
+        Button(
+            onClick = onOpenMyBookings,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("My bookings")
         }
 
         OutlinedButton(

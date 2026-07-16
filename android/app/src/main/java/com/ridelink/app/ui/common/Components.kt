@@ -172,6 +172,48 @@ fun ErrorState(message: String, onRetry: () -> Unit) {
     }
 }
 
+// Coloured pill for a booking status (REQUESTED / ACCEPTED / DECLINED / CANCELLED).
+@Composable
+fun StatusPill(status: String) {
+    val scheme = MaterialTheme.colorScheme
+    val (bg, fg) = when (status.uppercase()) {
+        "ACCEPTED" -> scheme.primary to scheme.onPrimary
+        "DECLINED", "CANCELLED" -> scheme.errorContainer to scheme.onErrorContainer
+        else -> scheme.secondaryContainer to scheme.onSecondaryContainer
+    }
+    val label = status.lowercase().replaceFirstChar { it.uppercase() }
+    Surface(color = bg, shape = MaterialTheme.shapes.small) {
+        Text(
+            text = label,
+            color = fg,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+        )
+    }
+}
+
+// Contact reveal shown once a booking is ACCEPTED so the two parties can coordinate.
+@Composable
+fun ContactCard(name: String?, phone: String?) {
+    Surface(
+        color = MaterialTheme.colorScheme.primaryContainer,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                "You're connected — coordinate your trip",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+            name?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer) }
+            phone?.let { Text(it, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer) }
+        }
+    }
+}
+
 @Composable
 fun SeatStepper(label: String, value: Int, onChange: (Int) -> Unit, min: Int = 1, max: Int = 8) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
