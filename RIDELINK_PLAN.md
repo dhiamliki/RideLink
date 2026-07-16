@@ -89,7 +89,7 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 - [x] User + auth data model; Flyway migration
 - [x] Phone signup: request OTP (dev = code logged/returned, no real SMS), verify OTP -> account
 - [x] JWT access + refresh tokens; refresh endpoint; secure token handling
-- [ ] Profile: name, photo (upload -> storage), bio, languages; `GET/PUT /api/me`
+- [x] Profile: name, photo (upload -> storage), bio, languages; `GET/PUT /api/me`
 - [ ] Android: phone entry -> OTP screen -> verified -> token stored -> profile setup
 - [ ] End to end: a user signs up on the phone and stays logged in
 
@@ -148,6 +148,11 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 
 ## Working log (append newest at top)
 
+- 2026-07-16 — Phase 1 profile endpoints: `GET /api/me` (adds `isProfileComplete` =
+  displayName set), `PUT /api/me` (displayName required + bio, phone/verified immutable),
+  `POST /api/me/photo` (jpeg/png, <=5MB) with local filesystem storage behind a `PhotoStorage`
+  interface (cloud swaps in later) served via `GET /api/me/photo/{id}`. DTOs only; all endpoints
+  require a valid access token. Verified end-to-end via curl.
 - 2026-07-16 — Phase 1 backend auth: phone-OTP request/verify (BCrypt-hashed codes, 5-min TTL,
   30s resend throttle, 5-attempt lockout), JWT access (15m) + rotating refresh (30d, SHA-256
   hashed) with refresh endpoint; JWT security filter (stateless; `/api/auth/**` + `/api/health`

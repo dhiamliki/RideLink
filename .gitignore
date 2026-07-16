@@ -36,3 +36,6 @@ Thumbs.db
 
 # Env / secrets
 .env
+
+# Local uploads (v1 photo storage stub)
+uploads/
