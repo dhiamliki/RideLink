@@ -148,6 +148,12 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 
 ## Working log (append newest at top)
 
+- 2026-07-16 — Phase 2 data model: `ride_offer` + `ride_request` tables (Flyway V3) with a shared
+  embedded `Location` (city_name + lat + lon) for origin/destination; coordinates stored now for
+  Phase 5 route matching. Enums for status/time-window, `numeric(10,3)` prices (DT millimes),
+  FKs to users, and indexes on (status, date) + city-name columns for 2b browse/filter. JPA
+  entities + repositories (finder stubs only, no search logic). Boots + validates + V3 applies
+  cleanly. (No dedicated data-model checkbox in Phase 2; the create/edit/cancel boxes are 2b.)
 - 2026-07-16 — Phase 1 Android auth flow: Phone -> OTP (dev code prefilled) -> ProfileSetup (new
   user) -> Home greeting, with startup session check and Logout. Tokens in DataStore
   (`TokenStore`); OkHttp `AuthInterceptor` attaches the Bearer token and refreshes once on 401
