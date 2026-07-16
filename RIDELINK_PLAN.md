@@ -99,8 +99,8 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 - [x] Ride request: create/edit/cancel (origin, destination, time window, budget, notes)
 - [x] Browse + search + filter both (date, price, seats, rating) — REST endpoints
 - [x] Simple `MatchingStrategy`: rank results by route similarity + date/time + rating
-- [ ] Booking: passenger requests a seat -> driver accepts/declines -> seats decrement atomically
-- [ ] Contact revealed on accept; booking states (requested/accepted/declined/cancelled)
+- [x] Booking: passenger requests a seat -> driver accepts/declines -> seats decrement atomically
+- [x] Contact revealed on accept; booking states (requested/accepted/declined/cancelled)
 - [ ] Android screens: feed (ranked), post offer, post request, detail, request/accept flow
 - [ ] End to end: post -> discover -> request -> accept -> confirmed, on the phone
 
@@ -148,6 +148,14 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 
 ## Working log (append newest at top)
 
+- 2026-07-16 — Phase 2 booking handshake (Flyway V4 `booking`): request -> accept/decline ->
+  cancel, all token-gated with owner/passenger checks. Seats change only on ACCEPT (and restore
+  on cancel of an accepted booking) via an atomic conditional UPDATE on `ride_offer`
+  (`available_seats >= n` guard, 0 rows -> 409) — verified oversell-safe under a concurrent
+  double-accept into the last seat (one OK, one 409, seats=0). Counterpart contact
+  (phone + name) revealed to both parties only on ACCEPTED. Verified via curl: full flow +
+  own-booking 403, double-book 409, non-owner accept 403, 0-seat 409, contact hidden pre-accept,
+  401 without token.
 - 2026-07-16 — Phase 2 ride endpoints: offers + requests CRUD (`POST/PUT/DELETE/GET
   /api/offers` + `/api/requests`, owner-only edit/cancel while ACTIVE, soft cancel) and
   browse/search/filter lists (JPA Specifications: originCity/destCity/date/minSeats/maxPrice/
