@@ -39,3 +39,6 @@ Thumbs.db
 
 # Local uploads (v1 photo storage stub)
 uploads/
+
+# Transient backend run logs
+*.log

@@ -95,10 +95,10 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 
 ## Phase 2 — Marketplace core (the soul — one full journey)
 
-- [ ] Ride offer: create/edit/cancel (origin, destination, date, time, seats, price, notes)
-- [ ] Ride request: create/edit/cancel (origin, destination, time window, budget, notes)
-- [ ] Browse + search + filter both (date, price, seats, rating) — REST endpoints
-- [ ] Simple `MatchingStrategy`: rank results by route similarity + date/time + rating
+- [x] Ride offer: create/edit/cancel (origin, destination, date, time, seats, price, notes)
+- [x] Ride request: create/edit/cancel (origin, destination, time window, budget, notes)
+- [x] Browse + search + filter both (date, price, seats, rating) — REST endpoints
+- [x] Simple `MatchingStrategy`: rank results by route similarity + date/time + rating
 - [ ] Booking: passenger requests a seat -> driver accepts/declines -> seats decrement atomically
 - [ ] Contact revealed on accept; booking states (requested/accepted/declined/cancelled)
 - [ ] Android screens: feed (ranked), post offer, post request, detail, request/accept flow
@@ -148,6 +148,13 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 
 ## Working log (append newest at top)
 
+- 2026-07-16 — Phase 2 ride endpoints: offers + requests CRUD (`POST/PUT/DELETE/GET
+  /api/offers` + `/api/requests`, owner-only edit/cancel while ACTIVE, soft cancel) and
+  browse/search/filter lists (JPA Specifications: originCity/destCity/date/minSeats/maxPrice/
+  smoking/pets; active + availableSeats>0) with in-memory pagination. Ranking behind a
+  `MatchingStrategy` interface + `SimpleMatchingStrategy` (exact-city > date-closeness > recency)
+  returning a 0-100 `matchScore`; DTOs carry the poster's public summary. Verified via curl
+  (create/browse/filter include+exclude/edit/request/cancel drop-out/403 owner-only/401).
 - 2026-07-16 — Phase 2 data model: `ride_offer` + `ride_request` tables (Flyway V3) with a shared
   embedded `Location` (city_name + lat + lon) for origin/destination; coordinates stored now for
   Phase 5 route matching. Enums for status/time-window, `numeric(10,3)` prices (DT millimes),
