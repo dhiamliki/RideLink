@@ -2,40 +2,55 @@ package com.ridelink.app.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ridelink.app.data.local.TokenStore
 import com.ridelink.app.data.remote.ApiService
+import com.ridelink.app.data.remote.ProfileResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-sealed interface HealthUiState {
-    data object Loading : HealthUiState
-    data class Success(val status: String) : HealthUiState
-    data class Error(val message: String) : HealthUiState
+sealed interface HomeUiState {
+    data object Loading : HomeUiState
+    data class Success(val profile: ProfileResponse) : HomeUiState
+    data class Error(val message: String) : HomeUiState
 }
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val api: ApiService,
+    private val tokenStore: TokenStore,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<HealthUiState>(HealthUiState.Loading)
-    val uiState: StateFlow<HealthUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
+    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    private val _loggedOut = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val loggedOut: SharedFlow<Unit> = _loggedOut
 
     init {
-        checkHealth()
+        load()
     }
 
-    fun checkHealth() {
-        _uiState.value = HealthUiState.Loading
+    fun load() {
+        _uiState.value = HomeUiState.Loading
         viewModelScope.launch {
             _uiState.value = try {
-                HealthUiState.Success(api.health().status)
+                HomeUiState.Success(api.me())
             } catch (e: Exception) {
-                HealthUiState.Error(e.message ?: "Unknown error")
+                HomeUiState.Error("Could not load your profile")
             }
+        }
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            tokenStore.clear()
+            _loggedOut.tryEmit(Unit)
         }
     }
 }
