@@ -1,5 +1,6 @@
 package com.ridelink.app.ui.requests
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -36,7 +37,10 @@ import com.ridelink.app.ui.common.MatchBadge
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RequestsScreen(viewModel: RequestsViewModel = hiltViewModel()) {
+fun RequestsScreen(
+    onOpenRequest: (String) -> Unit,
+    viewModel: RequestsViewModel = hiltViewModel(),
+) {
     val uiState by viewModel.uiState.collectAsState()
     val filters by viewModel.filters.collectAsState()
     val refreshing by viewModel.refreshing.collectAsState()
@@ -76,7 +80,7 @@ fun RequestsScreen(viewModel: RequestsViewModel = hiltViewModel()) {
                             contentPadding = PaddingValues(16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            items(state.requests, key = { it.id }) { RequestCard(it) }
+                            items(state.requests, key = { it.id }) { RequestCard(it, onOpenRequest) }
                         }
                     }
             }
@@ -85,8 +89,8 @@ fun RequestsScreen(viewModel: RequestsViewModel = hiltViewModel()) {
 }
 
 @Composable
-private fun RequestCard(request: RequestItem) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+private fun RequestCard(request: RequestItem, onOpenRequest: (String) -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth().clickable { onOpenRequest(request.id) }) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
                 Modifier.fillMaxWidth(),

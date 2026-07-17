@@ -178,7 +178,7 @@ fun StatusPill(status: String) {
     val scheme = MaterialTheme.colorScheme
     val (bg, fg) = when (status.uppercase()) {
         "ACCEPTED" -> scheme.primary to scheme.onPrimary
-        "DECLINED", "CANCELLED" -> scheme.errorContainer to scheme.onErrorContainer
+        "DECLINED", "CANCELLED", "WITHDRAWN" -> scheme.errorContainer to scheme.onErrorContainer
         else -> scheme.secondaryContainer to scheme.onSecondaryContainer
     }
     val label = status.lowercase().replaceFirstChar { it.uppercase() }

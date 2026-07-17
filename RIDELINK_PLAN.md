@@ -105,6 +105,8 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
       accept fulfills the request + auto-declines other proposals; contact revealed on accept (backend)
 - [x] Android screens: feed (ranked), post offer, post request, detail, request/accept flow
       (feed + post offer/request done in 2d; detail + request/accept flow done in 2e)
+- [x] Android request-proposal UI: request detail + "I can take you" form, My proposals (driver,
+      withdraw), Proposals on my request (passenger, accept/decline + contact reveal) (2g)
 - [ ] End to end: post -> discover -> request -> accept -> confirmed, on the phone
 
 ## Phase 3 — Trust (minimum viable)
@@ -150,6 +152,20 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 ---
 
 ## Working log (append newest at top)
+
+- 2026-07-17 — Phase 2 Android request-proposal flow (2g): mirror of the 2e offer/booking screens.
+  Tapping a request card in the Requests tab opens Request detail (route, preferred date/time window,
+  seats, max price, notes, passenger). A driver sees an "I can take you" form (optional message +
+  price) → POST proposal → "proposed" banner; 409 (already proposed) and 403 (own request → hide form,
+  show "your request" + link to its proposals) handled. Profile gained "My proposals" (driver view:
+  status pill, withdraw while PROPOSED, contact revealed on ACCEPTED). Owner's request detail links to
+  "Proposals on my request" (passenger view: accept/decline, message + proposed price, contact reveal;
+  on accept the request is fulfilled and others show declined). Verified field shapes against the
+  running backend (contact field is `contact`; owner view exposes only `driverId`, so driver name
+  surfaces via `contact` once accepted). `./gradlew assembleDebug` BUILD SUCCESSFUL on the pinned JDK.
+  Two-user manual test: A posts a request; B opens it → "I can take you" (+message/price); A opens
+  proposals on their request → Accept; both see each other's contact; the request drops from A's active
+  Requests list.
 
 - 2026-07-17 — Phase 2 request-proposal handshake (2f, Flyway V5 `request_proposal`): mirror of the
   booking flow with roles flipped — a driver proposes on a passenger's ACTIVE ride_request

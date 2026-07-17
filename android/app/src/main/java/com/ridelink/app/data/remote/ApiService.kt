@@ -84,4 +84,30 @@ interface ApiService {
 
     @POST("api/bookings/{id}/cancel")
     suspend fun cancelBooking(@Path("id") id: String): Response<Unit>
+
+    // --- Request proposals (Task 2g) ---
+
+    @GET("api/requests/{id}")
+    suspend fun requestDetail(@Path("id") id: String): RequestItem
+
+    @POST("api/requests/{requestId}/proposals")
+    suspend fun createProposal(
+        @Path("requestId") requestId: String,
+        @Body body: CreateProposalBody,
+    ): Proposal
+
+    @GET("api/proposals/mine")
+    suspend fun myProposals(): List<Proposal>
+
+    @GET("api/requests/{requestId}/proposals")
+    suspend fun requestProposals(@Path("requestId") requestId: String): List<Proposal>
+
+    @POST("api/proposals/{id}/accept")
+    suspend fun acceptProposal(@Path("id") id: String): Response<Unit>
+
+    @POST("api/proposals/{id}/decline")
+    suspend fun declineProposal(@Path("id") id: String): Response<Unit>
+
+    @POST("api/proposals/{id}/withdraw")
+    suspend fun withdrawProposal(@Path("id") id: String): Response<Unit>
 }

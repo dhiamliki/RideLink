@@ -23,6 +23,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 fun HomeScreen(
     onLoggedOut: () -> Unit,
     onOpenMyBookings: () -> Unit,
+    onOpenMyProposals: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -59,6 +60,13 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text("My bookings")
+        }
+
+        Button(
+            onClick = onOpenMyProposals,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("My proposals")
         }
 
         OutlinedButton(

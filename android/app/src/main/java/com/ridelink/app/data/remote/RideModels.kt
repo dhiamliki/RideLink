@@ -101,6 +101,38 @@ data class BookingRequest(
 
 data class CreateBookingBody(val seatsBooked: Int)
 
+// --- Request proposals (Task 2g) ---
+
+// Flat summary of the request a proposal targets (backend RequestSummary: origin/dest are plain
+// city strings here, not nested LocationDto). Lenient defaults so partial payloads won't crash Gson.
+data class RequestBrief(
+    val id: String? = null,
+    val passengerId: String? = null,
+    val originCity: String? = null,
+    val destCity: String? = null,
+    val preferredDate: String? = null,
+    val seatsNeeded: Int = 1,
+    val status: String? = null,
+)
+
+// A driver's proposal on a request. Same shape whether fetched via /proposals/mine (driver view) or
+// /requests/{id}/proposals (owner view). NOTE: the backend exposes only driverId (no driver name/
+// photo); the counterpart's name+phone arrive in `contact` only once the proposal is ACCEPTED.
+data class Proposal(
+    val id: String,
+    val requestId: String? = null,
+    val driverId: String? = null,
+    val status: String = "PROPOSED",
+    val message: String? = null,
+    val pricePerSeat: Double? = null,
+    val createdAt: String? = null,
+    val decidedAt: String? = null,
+    val request: RequestBrief? = null,
+    val contact: ContactDto? = null,
+)
+
+data class CreateProposalBody(val message: String?, val pricePerSeat: Double?)
+
 // Request bodies
 data class CreateOfferBody(
     val origin: LocationDto,

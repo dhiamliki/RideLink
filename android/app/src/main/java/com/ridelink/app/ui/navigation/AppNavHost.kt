@@ -20,6 +20,9 @@ import com.ridelink.app.ui.create.CreateRequestScreen
 import com.ridelink.app.ui.create.PostChooserScreen
 import com.ridelink.app.ui.detail.RideDetailScreen
 import com.ridelink.app.ui.main.MainScreen
+import com.ridelink.app.ui.proposals.MyProposalsScreen
+import com.ridelink.app.ui.proposals.RequestProposalsScreen
+import com.ridelink.app.ui.requestdetail.RequestDetailScreen
 import com.ridelink.app.ui.otp.OtpScreen
 import com.ridelink.app.ui.otp.PostLogin
 import com.ridelink.app.ui.phone.PhoneScreen
@@ -39,9 +42,14 @@ object Routes {
     const val RIDE_DETAIL = "offer/{offerId}"
     const val OFFER_REQUESTS = "offer/{offerId}/requests"
     const val MY_BOOKINGS = "myBookings"
+    const val REQUEST_DETAIL = "request/{requestId}"
+    const val REQUEST_PROPOSALS = "request/{requestId}/proposals"
+    const val MY_PROPOSALS = "myProposals"
 
     fun rideDetail(offerId: String) = "offer/$offerId"
     fun offerRequests(offerId: String) = "offer/$offerId/requests"
+    fun requestDetail(requestId: String) = "request/$requestId"
+    fun requestProposals(requestId: String) = "request/$requestId/proposals"
 
     // phoneNumber is placed raw in the path segment; a literal '+' is valid there and is not
     // decoded to a space (that only happens in query strings).
@@ -117,7 +125,9 @@ fun AppNavHost(rootViewModel: RootViewModel = hiltViewModel()) {
                 onSelectTab = { mainTab = it },
                 onPost = { navController.navigate(Routes.POST_CHOOSER) },
                 onOpenOffer = { navController.navigate(Routes.rideDetail(it)) },
+                onOpenRequest = { navController.navigate(Routes.requestDetail(it)) },
                 onOpenMyBookings = { navController.navigate(Routes.MY_BOOKINGS) },
+                onOpenMyProposals = { navController.navigate(Routes.MY_PROPOSALS) },
                 onLoggedOut = {
                     navController.navigate(Routes.PHONE) {
                         popUpTo(navController.graph.id) { inclusive = true }
@@ -173,6 +183,27 @@ fun AppNavHost(rootViewModel: RootViewModel = hiltViewModel()) {
 
         composable(Routes.MY_BOOKINGS) {
             MyBookingsScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(
+            route = Routes.REQUEST_DETAIL,
+            arguments = listOf(navArgument("requestId") { type = NavType.StringType }),
+        ) {
+            RequestDetailScreen(
+                onBack = { navController.popBackStack() },
+                onViewProposals = { navController.navigate(Routes.requestProposals(it)) },
+            )
+        }
+
+        composable(
+            route = Routes.REQUEST_PROPOSALS,
+            arguments = listOf(navArgument("requestId") { type = NavType.StringType }),
+        ) {
+            RequestProposalsScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(Routes.MY_PROPOSALS) {
+            MyProposalsScreen(onBack = { navController.popBackStack() })
         }
     }
 }

@@ -31,7 +31,9 @@ fun MainScreen(
     onSelectTab: (Int) -> Unit,
     onPost: () -> Unit,
     onOpenOffer: (String) -> Unit,
+    onOpenRequest: (String) -> Unit,
     onOpenMyBookings: () -> Unit,
+    onOpenMyProposals: () -> Unit,
     onLoggedOut: () -> Unit,
 ) {
     val tabs = listOf(
@@ -68,8 +70,12 @@ fun MainScreen(
         Box(Modifier.fillMaxSize().padding(padding)) {
             when (selectedTab) {
                 0 -> FeedScreen(onOpenOffer = onOpenOffer)
-                1 -> RequestsScreen()
-                2 -> HomeScreen(onLoggedOut = onLoggedOut, onOpenMyBookings = onOpenMyBookings)
+                1 -> RequestsScreen(onOpenRequest = onOpenRequest)
+                2 -> HomeScreen(
+                    onLoggedOut = onLoggedOut,
+                    onOpenMyBookings = onOpenMyBookings,
+                    onOpenMyProposals = onOpenMyProposals,
+                )
             }
         }
     }
