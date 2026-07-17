@@ -3,8 +3,11 @@ package com.ridelink.app.ui.bookings
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ridelink.app.data.RefreshBus
 import com.ridelink.app.data.remote.ApiService
 import com.ridelink.app.data.remote.BookingRequest
+import com.ridelink.app.data.remote.CreateBlockBody
+import com.ridelink.app.data.remote.CreateReportBody
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +24,7 @@ sealed interface OfferRequestsUiState {
 @HiltViewModel
 class OfferRequestsViewModel @Inject constructor(
     private val api: ApiService,
+    private val refreshBus: RefreshBus,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -51,6 +55,19 @@ class OfferRequestsViewModel @Inject constructor(
     fun accept(bookingId: String) = act(bookingId) { api.acceptBooking(bookingId) }
 
     fun decline(bookingId: String) = act(bookingId) { api.declineBooking(bookingId) }
+
+    fun report(userId: String, reason: String, detail: String?) {
+        viewModelScope.launch { runCatching { api.reportUser(CreateReportBody(userId, reason, detail)) } }
+    }
+
+    // Block, then reload so the (now auto-declined / hidden) counterpart's rows update.
+    fun block(userId: String) {
+        viewModelScope.launch {
+            runCatching { api.blockUser(CreateBlockBody(userId)) }
+            refreshBus.refreshBrowse()
+            load()
+        }
+    }
 
     private fun act(bookingId: String, call: suspend () -> Unit) {
         _working.value = bookingId

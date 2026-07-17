@@ -22,6 +22,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -33,6 +34,7 @@ import com.ridelink.app.data.remote.OfferDetail
 import com.ridelink.app.ui.common.Avatar
 import com.ridelink.app.ui.common.ErrorState
 import com.ridelink.app.ui.common.LoadingState
+import com.ridelink.app.ui.common.SafetyMenu
 import com.ridelink.app.ui.common.SeatStepper
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,6 +46,9 @@ fun RideDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    // A completed block hides the driver's ride, so leave the now-stale detail screen.
+    LaunchedEffect(Unit) { viewModel.blocked.collect { onBack() } }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -51,6 +56,18 @@ fun RideDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    val s = uiState
+                    val driver = (s as? DetailUiState.Success)?.takeIf { !it.isOwner }?.offer?.driver
+                    val driverId = driver?.id
+                    if (driverId != null) {
+                        SafetyMenu(
+                            targetName = driver.displayName ?: "this driver",
+                            onReport = { reason, detail -> viewModel.report(driverId, reason, detail) },
+                            onBlock = { viewModel.block(driverId) },
+                        )
                     }
                 },
             )

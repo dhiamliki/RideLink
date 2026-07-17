@@ -3,13 +3,19 @@ package com.ridelink.app.ui.requestdetail
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ridelink.app.data.RefreshBus
 import com.ridelink.app.data.remote.ApiService
+import com.ridelink.app.data.remote.CreateBlockBody
 import com.ridelink.app.data.remote.CreateProposalBody
+import com.ridelink.app.data.remote.CreateReportBody
 import com.ridelink.app.data.remote.RequestItem
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
@@ -38,6 +44,7 @@ sealed interface ProposalState {
 @HiltViewModel
 class RequestDetailViewModel @Inject constructor(
     private val api: ApiService,
+    private val refreshBus: RefreshBus,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -46,8 +53,26 @@ class RequestDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<RequestDetailUiState>(RequestDetailUiState.Loading)
     val uiState: StateFlow<RequestDetailUiState> = _uiState.asStateFlow()
 
+    // Emitted once a block finishes so the screen can navigate away (the request is now hidden).
+    private val _blocked = MutableSharedFlow<Unit>()
+    val blocked: SharedFlow<Unit> = _blocked.asSharedFlow()
+
     init {
         load()
+    }
+
+    fun report(userId: String, reason: String, detail: String?) {
+        viewModelScope.launch {
+            runCatching { api.reportUser(CreateReportBody(userId, reason, detail)) }
+        }
+    }
+
+    fun block(userId: String) {
+        viewModelScope.launch {
+            runCatching { api.blockUser(CreateBlockBody(userId)) }
+            refreshBus.refreshBrowse()
+            _blocked.emit(Unit)
+        }
     }
 
     fun load() {

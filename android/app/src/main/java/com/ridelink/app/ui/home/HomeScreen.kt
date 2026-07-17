@@ -24,6 +24,7 @@ fun HomeScreen(
     onLoggedOut: () -> Unit,
     onOpenMyBookings: () -> Unit,
     onOpenMyProposals: () -> Unit,
+    onOpenBlockedUsers: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -67,6 +68,13 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text("My proposals")
+        }
+
+        OutlinedButton(
+            onClick = onOpenBlockedUsers,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Blocked users")
         }
 
         OutlinedButton(

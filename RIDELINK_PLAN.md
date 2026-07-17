@@ -115,8 +115,8 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 - [x] Report a user (reason + optional detail); stored for admin review (Phase 8) *(backend, 3a)*
 - [x] Block a user: a blocked user cannot book/propose/contact you, and drops out of your views *(backend, 3a)*
 - [x] Enforce blocks across the marketplace (booking, proposal, contact reveal) *(backend, 3a)*
-- [ ] Android: report + block actions (from a user's info / an accepted connection), a "blocked
-      users" list to unblock
+- [x] Android: report + block actions (from a user's info / an accepted connection), a "blocked
+      users" list to unblock *(3b)*
 - [ ] (Profile shows NO rating/review section — just name, photo, bio, member-since)
 
 ## Phase 4 — Real-time chat + notifications
@@ -155,6 +155,20 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 ---
 
 ## Working log (append newest at top)
+
+- 2026-07-17 — Phase 3 Android report + block UI (3b): extended ApiService (reportUser, blockUser,
+  unblockUser, blockedUsers) + models. A reusable `SafetyMenu` (overflow → Report / Block) with a
+  reason-picker report dialog (HARASSMENT/UNSAFE_DRIVING/NO_SHOW/INAPPROPRIATE/OTHER + optional detail,
+  confirmation toast) and a block confirm dialog. Wired onto ride detail + request detail (top-bar, only
+  when not your own posting) and the counterpart rows of "requests on my ride", "proposals on my request",
+  and "my proposals". Blocking from a detail screen navigates back; a Hilt-singleton RefreshBus makes the
+  Feed/Requests browse lists reload after any block/unblock so hidden content updates. New "Blocked users"
+  screen from Profile lists GET /api/blocks (name+photo) with per-row Unblock (DELETE) and an empty state.
+  Verified response shapes against the running backend (reports→201, blocks→204 idempotent, GET blocks→
+  [{id,displayName,photoUrl}], DELETE→204). `./gradlew assembleDebug` BUILD SUCCESSFUL on the pinned JDK.
+  Two-user manual test: A opens B's ride → Report (pick reason → toast) and Block B → B's listings vanish
+  from A's browse; A: Profile → Blocked users → sees B → Unblock → B reappears. (MyBookings has no report/
+  block since that payload carries no counterpart user id.)
 
 - 2026-07-17 — Phase 3 report + block with enforcement (3a, backend, Flyway V6 `report`/`block`):
   new `com.ridelink.safety` package. Endpoints (token-gated): POST /api/reports (400 on self, stored

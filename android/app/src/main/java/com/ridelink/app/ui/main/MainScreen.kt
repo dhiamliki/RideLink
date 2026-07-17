@@ -34,6 +34,7 @@ fun MainScreen(
     onOpenRequest: (String) -> Unit,
     onOpenMyBookings: () -> Unit,
     onOpenMyProposals: () -> Unit,
+    onOpenBlockedUsers: () -> Unit,
     onLoggedOut: () -> Unit,
 ) {
     val tabs = listOf(
@@ -75,6 +76,7 @@ fun MainScreen(
                     onLoggedOut = onLoggedOut,
                     onOpenMyBookings = onOpenMyBookings,
                     onOpenMyProposals = onOpenMyProposals,
+                    onOpenBlockedUsers = onOpenBlockedUsers,
                 )
             }
         }

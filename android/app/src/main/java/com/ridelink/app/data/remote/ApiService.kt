@@ -2,6 +2,7 @@ package com.ridelink.app.data.remote
 
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
@@ -110,4 +111,18 @@ interface ApiService {
 
     @POST("api/proposals/{id}/withdraw")
     suspend fun withdrawProposal(@Path("id") id: String): Response<Unit>
+
+    // --- Safety: report + block (Task 3b) ---
+
+    @POST("api/reports")
+    suspend fun reportUser(@Body body: CreateReportBody): Response<Unit>
+
+    @POST("api/blocks")
+    suspend fun blockUser(@Body body: CreateBlockBody): Response<Unit>
+
+    @DELETE("api/blocks/{blockedUserId}")
+    suspend fun unblockUser(@Path("blockedUserId") blockedUserId: String): Response<Unit>
+
+    @GET("api/blocks")
+    suspend fun blockedUsers(): List<BlockedUser>
 }

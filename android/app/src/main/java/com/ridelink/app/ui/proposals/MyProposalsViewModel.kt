@@ -2,7 +2,10 @@ package com.ridelink.app.ui.proposals
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ridelink.app.data.RefreshBus
 import com.ridelink.app.data.remote.ApiService
+import com.ridelink.app.data.remote.CreateBlockBody
+import com.ridelink.app.data.remote.CreateReportBody
 import com.ridelink.app.data.remote.Proposal
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -18,7 +21,10 @@ sealed interface MyProposalsUiState {
 }
 
 @HiltViewModel
-class MyProposalsViewModel @Inject constructor(private val api: ApiService) : ViewModel() {
+class MyProposalsViewModel @Inject constructor(
+    private val api: ApiService,
+    private val refreshBus: RefreshBus,
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<MyProposalsUiState>(MyProposalsUiState.Loading)
     val uiState: StateFlow<MyProposalsUiState> = _uiState.asStateFlow()
@@ -53,6 +59,19 @@ class MyProposalsViewModel @Inject constructor(private val api: ApiService) : Vi
                 _working.value = null
                 load()
             }
+        }
+    }
+
+    fun report(userId: String, reason: String, detail: String?) {
+        viewModelScope.launch { runCatching { api.reportUser(CreateReportBody(userId, reason, detail)) } }
+    }
+
+    // Block the request owner, then reload so the (now auto-declined) proposal updates.
+    fun block(userId: String) {
+        viewModelScope.launch {
+            runCatching { api.blockUser(CreateBlockBody(userId)) }
+            refreshBus.refreshBrowse()
+            load()
         }
     }
 }

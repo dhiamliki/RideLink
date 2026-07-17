@@ -3,7 +3,10 @@ package com.ridelink.app.ui.proposals
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ridelink.app.data.RefreshBus
 import com.ridelink.app.data.remote.ApiService
+import com.ridelink.app.data.remote.CreateBlockBody
+import com.ridelink.app.data.remote.CreateReportBody
 import com.ridelink.app.data.remote.Proposal
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -21,6 +24,7 @@ sealed interface RequestProposalsUiState {
 @HiltViewModel
 class RequestProposalsViewModel @Inject constructor(
     private val api: ApiService,
+    private val refreshBus: RefreshBus,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -51,6 +55,19 @@ class RequestProposalsViewModel @Inject constructor(
     fun accept(proposalId: String) = act(proposalId) { api.acceptProposal(proposalId) }
 
     fun decline(proposalId: String) = act(proposalId) { api.declineProposal(proposalId) }
+
+    fun report(userId: String, reason: String, detail: String?) {
+        viewModelScope.launch { runCatching { api.reportUser(CreateReportBody(userId, reason, detail)) } }
+    }
+
+    // Block, then reload so the (now auto-declined) proposal from that driver updates.
+    fun block(userId: String) {
+        viewModelScope.launch {
+            runCatching { api.blockUser(CreateBlockBody(userId)) }
+            refreshBus.refreshBrowse()
+            load()
+        }
+    }
 
     private fun act(proposalId: String, call: suspend () -> Unit) {
         _working.value = proposalId

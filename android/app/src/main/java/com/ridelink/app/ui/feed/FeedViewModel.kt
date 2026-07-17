@@ -2,6 +2,7 @@ package com.ridelink.app.ui.feed
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ridelink.app.data.RefreshBus
 import com.ridelink.app.data.TunisianCity
 import com.ridelink.app.data.remote.ApiService
 import com.ridelink.app.data.remote.OfferItem
@@ -27,7 +28,10 @@ sealed interface FeedUiState {
 }
 
 @HiltViewModel
-class FeedViewModel @Inject constructor(private val api: ApiService) : ViewModel() {
+class FeedViewModel @Inject constructor(
+    private val api: ApiService,
+    refreshBus: RefreshBus,
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
     val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
@@ -37,6 +41,11 @@ class FeedViewModel @Inject constructor(private val api: ApiService) : ViewModel
 
     private val _refreshing = MutableStateFlow(false)
     val refreshing: StateFlow<Boolean> = _refreshing.asStateFlow()
+
+    init {
+        // Reload when a block elsewhere hides a user's rides from this list.
+        viewModelScope.launch { refreshBus.browse.collect { fetch() } }
+    }
 
     fun setRoute(origin: TunisianCity?, destination: TunisianCity?, date: String?) {
         _filters.value = _filters.value.copy(origin = origin, destination = destination, date = date)

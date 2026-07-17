@@ -24,6 +24,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -36,6 +37,7 @@ import com.ridelink.app.data.remote.RequestItem
 import com.ridelink.app.ui.common.Avatar
 import com.ridelink.app.ui.common.ErrorState
 import com.ridelink.app.ui.common.LoadingState
+import com.ridelink.app.ui.common.SafetyMenu
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,6 +48,9 @@ fun RequestDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    // A completed block hides this passenger's request, so leave the now-stale detail screen.
+    LaunchedEffect(Unit) { viewModel.blocked.collect { onBack() } }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -53,6 +58,18 @@ fun RequestDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    val s = uiState
+                    val passenger = (s as? RequestDetailUiState.Success)?.takeIf { !it.isOwner }?.request?.passenger
+                    val passengerId = passenger?.id
+                    if (passengerId != null) {
+                        SafetyMenu(
+                            targetName = passenger.displayName ?: "this passenger",
+                            onReport = { reason, detail -> viewModel.report(passengerId, reason, detail) },
+                            onBlock = { viewModel.block(passengerId) },
+                        )
                     }
                 },
             )

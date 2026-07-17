@@ -13,6 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.ridelink.app.ui.blocked.BlockedUsersScreen
 import com.ridelink.app.ui.bookings.MyBookingsScreen
 import com.ridelink.app.ui.bookings.OfferRequestsScreen
 import com.ridelink.app.ui.create.CreateOfferScreen
@@ -45,6 +46,7 @@ object Routes {
     const val REQUEST_DETAIL = "request/{requestId}"
     const val REQUEST_PROPOSALS = "request/{requestId}/proposals"
     const val MY_PROPOSALS = "myProposals"
+    const val BLOCKED_USERS = "blockedUsers"
 
     fun rideDetail(offerId: String) = "offer/$offerId"
     fun offerRequests(offerId: String) = "offer/$offerId/requests"
@@ -128,6 +130,7 @@ fun AppNavHost(rootViewModel: RootViewModel = hiltViewModel()) {
                 onOpenRequest = { navController.navigate(Routes.requestDetail(it)) },
                 onOpenMyBookings = { navController.navigate(Routes.MY_BOOKINGS) },
                 onOpenMyProposals = { navController.navigate(Routes.MY_PROPOSALS) },
+                onOpenBlockedUsers = { navController.navigate(Routes.BLOCKED_USERS) },
                 onLoggedOut = {
                     navController.navigate(Routes.PHONE) {
                         popUpTo(navController.graph.id) { inclusive = true }
@@ -204,6 +207,10 @@ fun AppNavHost(rootViewModel: RootViewModel = hiltViewModel()) {
 
         composable(Routes.MY_PROPOSALS) {
             MyProposalsScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(Routes.BLOCKED_USERS) {
+            BlockedUsersScreen(onBack = { navController.popBackStack() })
         }
     }
 }

@@ -36,6 +36,7 @@ import com.ridelink.app.ui.common.ContactCard
 import com.ridelink.app.ui.common.EmptyState
 import com.ridelink.app.ui.common.ErrorState
 import com.ridelink.app.ui.common.LoadingState
+import com.ridelink.app.ui.common.SafetyMenu
 import com.ridelink.app.ui.common.StatusPill
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -77,7 +78,8 @@ fun RequestProposalsScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             items(state.proposals, key = { it.id }) {
-                                ProposalCard(it, working == it.id, viewModel::accept, viewModel::decline)
+                                ProposalCard(it, working == it.id, viewModel::accept, viewModel::decline,
+                                    viewModel::report, viewModel::block)
                             }
                         }
                     }
@@ -92,11 +94,14 @@ private fun ProposalCard(
     working: Boolean,
     onAccept: (String) -> Unit,
     onDecline: (String) -> Unit,
+    onReport: (String, String, String?) -> Unit,
+    onBlock: (String) -> Unit,
 ) {
     val status = proposal.status.uppercase()
     // The backend exposes only driverId on this view; the driver's name arrives via `contact`
     // once ACCEPTED. Show that name if we have it, otherwise a neutral label.
     val driverName = proposal.contact?.displayName ?: "Driver"
+    val driverId = proposal.driverId
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -104,7 +109,16 @@ private fun ProposalCard(
                     Avatar(driverName)
                     Text(driverName, style = MaterialTheme.typography.titleMedium)
                 }
-                StatusPill(proposal.status)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    StatusPill(proposal.status)
+                    if (driverId != null) {
+                        SafetyMenu(
+                            targetName = driverName,
+                            onReport = { reason, detail -> onReport(driverId, reason, detail) },
+                            onBlock = { onBlock(driverId) },
+                        )
+                    }
+                }
             }
             proposal.message?.takeIf { it.isNotBlank() }?.let {
                 Text("“$it”", style = MaterialTheme.typography.bodyMedium)

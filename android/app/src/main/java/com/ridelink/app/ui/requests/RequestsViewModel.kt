@@ -2,6 +2,7 @@ package com.ridelink.app.ui.requests
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ridelink.app.data.RefreshBus
 import com.ridelink.app.data.TunisianCity
 import com.ridelink.app.data.remote.ApiService
 import com.ridelink.app.data.remote.RequestItem
@@ -25,7 +26,10 @@ sealed interface RequestsUiState {
 }
 
 @HiltViewModel
-class RequestsViewModel @Inject constructor(private val api: ApiService) : ViewModel() {
+class RequestsViewModel @Inject constructor(
+    private val api: ApiService,
+    refreshBus: RefreshBus,
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<RequestsUiState>(RequestsUiState.Loading)
     val uiState: StateFlow<RequestsUiState> = _uiState.asStateFlow()
@@ -35,6 +39,11 @@ class RequestsViewModel @Inject constructor(private val api: ApiService) : ViewM
 
     private val _refreshing = MutableStateFlow(false)
     val refreshing: StateFlow<Boolean> = _refreshing.asStateFlow()
+
+    init {
+        // Reload when a block elsewhere hides a user's requests from this list.
+        viewModelScope.launch { refreshBus.browse.collect { fetch() } }
+    }
 
     fun setRoute(origin: TunisianCity?, destination: TunisianCity?, date: String?) {
         _filters.value = _filters.value.copy(origin = origin, destination = destination, date = date)

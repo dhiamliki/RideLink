@@ -36,6 +36,7 @@ import com.ridelink.app.ui.common.ContactCard
 import com.ridelink.app.ui.common.EmptyState
 import com.ridelink.app.ui.common.ErrorState
 import com.ridelink.app.ui.common.LoadingState
+import com.ridelink.app.ui.common.SafetyMenu
 import com.ridelink.app.ui.common.StatusPill
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -77,7 +78,8 @@ fun OfferRequestsScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             items(state.requests, key = { it.id }) {
-                                RequestCard(it, working == it.id, viewModel::accept, viewModel::decline)
+                                RequestCard(it, working == it.id, viewModel::accept, viewModel::decline,
+                                    viewModel::report, viewModel::block)
                             }
                         }
                     }
@@ -92,16 +94,29 @@ private fun RequestCard(
     working: Boolean,
     onAccept: (String) -> Unit,
     onDecline: (String) -> Unit,
+    onReport: (String, String, String?) -> Unit,
+    onBlock: (String) -> Unit,
 ) {
     val status = request.status.uppercase()
+    val passengerName = request.passenger?.displayName ?: "Passenger"
+    val passengerId = request.passenger?.id
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Avatar(request.passenger?.displayName)
-                    Text(request.passenger?.displayName ?: "Passenger", style = MaterialTheme.typography.titleMedium)
+                    Text(passengerName, style = MaterialTheme.typography.titleMedium)
                 }
-                StatusPill(request.status)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    StatusPill(request.status)
+                    if (passengerId != null) {
+                        SafetyMenu(
+                            targetName = passengerName,
+                            onReport = { reason, detail -> onReport(passengerId, reason, detail) },
+                            onBlock = { onBlock(passengerId) },
+                        )
+                    }
+                }
             }
             Text("${request.seatsBooked} seat(s) requested", style = MaterialTheme.typography.bodyMedium)
 

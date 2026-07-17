@@ -34,6 +34,7 @@ import com.ridelink.app.ui.common.ContactCard
 import com.ridelink.app.ui.common.EmptyState
 import com.ridelink.app.ui.common.ErrorState
 import com.ridelink.app.ui.common.LoadingState
+import com.ridelink.app.ui.common.SafetyMenu
 import com.ridelink.app.ui.common.StatusPill
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,7 +76,8 @@ fun MyProposalsScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             items(state.proposals, key = { it.id }) {
-                                ProposalCard(it, working == it.id, viewModel::withdraw)
+                                ProposalCard(it, working == it.id, viewModel::withdraw,
+                                    viewModel::report, viewModel::block)
                             }
                         }
                     }
@@ -85,14 +87,32 @@ fun MyProposalsScreen(
 }
 
 @Composable
-private fun ProposalCard(proposal: Proposal, working: Boolean, onWithdraw: (String) -> Unit) {
+private fun ProposalCard(
+    proposal: Proposal,
+    working: Boolean,
+    onWithdraw: (String) -> Unit,
+    onReport: (String, String, String?) -> Unit,
+    onBlock: (String) -> Unit,
+) {
     val status = proposal.status.uppercase()
     val route = proposal.request?.let { "${it.originCity ?: "?"}  →  ${it.destCity ?: "?"}" }
+    // Counterpart on this screen is the request owner; their name arrives via `contact` once ACCEPTED.
+    val ownerId = proposal.request?.passengerId
+    val ownerName = proposal.contact?.displayName ?: "Passenger"
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(route ?: "Request", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                StatusPill(proposal.status)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    StatusPill(proposal.status)
+                    if (ownerId != null) {
+                        SafetyMenu(
+                            targetName = ownerName,
+                            onReport = { reason, detail -> onReport(ownerId, reason, detail) },
+                            onBlock = { onBlock(ownerId) },
+                        )
+                    }
+                }
             }
             proposal.request?.preferredDate?.let {
                 Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
