@@ -101,6 +101,8 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 - [x] Simple `MatchingStrategy`: rank results by route similarity + date/time + rating
 - [x] Booking: passenger requests a seat -> driver accepts/declines -> seats decrement atomically
 - [x] Contact revealed on accept; booking states (requested/accepted/declined/cancelled)
+- [x] Request-proposal handshake: driver proposes on a request -> passenger accepts/declines;
+      accept fulfills the request + auto-declines other proposals; contact revealed on accept (backend)
 - [x] Android screens: feed (ranked), post offer, post request, detail, request/accept flow
       (feed + post offer/request done in 2d; detail + request/accept flow done in 2e)
 - [ ] End to end: post -> discover -> request -> accept -> confirmed, on the phone
@@ -148,6 +150,14 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 ---
 
 ## Working log (append newest at top)
+
+- 2026-07-17 — Phase 2 request-proposal handshake (2f, Flyway V5 `request_proposal`): mirror of the
+  booking flow with roles flipped — a driver proposes on a passenger's ACTIVE ride_request
+  (POST /api/requests/{id}/proposals), can withdraw; the request owner accepts/declines. Accept is
+  transactional: proposal -> ACCEPTED, request -> FULFILLED (drops from active browse), other pending
+  proposals auto-declined, contact (name+phone) revealed both ways. Own-request propose 403,
+  double-propose 409, non-owner accept 403, contact hidden pre-accept, 401 without token — all verified
+  end-to-end against Postgres/dev with three users (18/18 checks).
 
 - 2026-07-16 — Phase 2 Android ride detail + booking flow (2e): tap a feed card → ride detail
   (full route/date/time/seats/price/notes/smoking-pets/driver+rating). "Request a seat" with a
