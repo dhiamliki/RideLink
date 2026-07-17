@@ -1,21 +1,18 @@
 package com.ridelink.app.ui.feed
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -25,22 +22,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ridelink.app.data.Cities
-import com.ridelink.app.data.remote.OfferItem
-import com.ridelink.app.ui.common.Avatar
 import com.ridelink.app.ui.common.CityDropdown
 import com.ridelink.app.ui.common.DateField
+import com.ridelink.app.ui.common.Dimens
 import com.ridelink.app.ui.common.EmptyState
 import com.ridelink.app.ui.common.ErrorState
 import com.ridelink.app.ui.common.LoadingState
-import com.ridelink.app.ui.common.MatchBadge
+import com.ridelink.app.ui.common.PrimaryButton
+import com.ridelink.app.ui.common.RideCard
+import com.ridelink.app.ui.common.SecondaryButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,14 +71,24 @@ fun FeedScreen(
                 is FeedUiState.Error -> ErrorState(state.message, onRetry = viewModel::load)
                 is FeedUiState.Success ->
                     if (state.offers.isEmpty()) {
-                        EmptyState("No rides found")
+                        EmptyState("No rides match yet — try a different route or date.")
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(horizontal = Dimens.screen, vertical = Dimens.lg),
+                            verticalArrangement = Arrangement.spacedBy(Dimens.md),
                         ) {
-                            items(state.offers, key = { it.id }) { OfferCard(it, onOpenOffer) }
+                            items(state.offers, key = { it.id }) { offer ->
+                                RideCard(
+                                    personName = offer.driver?.displayName ?: "Driver",
+                                    route = "${offer.origin.cityName}  →  ${offer.destination.cityName}",
+                                    subtitle = "${offer.departureDate} · ${offer.departureTime}",
+                                    footerStart = "${offer.availableSeats} seat(s) left",
+                                    footerEnd = "${offer.pricePerSeat} DT",
+                                    matchScore = offer.matchScore,
+                                    onClick = { onOpenOffer(offer.id) },
+                                )
+                            }
                         }
                     }
             }
@@ -121,18 +126,18 @@ private fun SearchBar(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(Dimens.screen),
+        verticalArrangement = Arrangement.spacedBy(Dimens.sm),
     ) {
-        Text("Where are you going?", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Where are you going?", style = MaterialTheme.typography.titleLarge)
+        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.sm)) {
             CityDropdown("From", originCity, Cities.ALL, { onSetRoute(it, destCity, date) }, Modifier.weight(1f))
             CityDropdown("To", destCity, Cities.ALL, { onSetRoute(originCity, it, date) }, Modifier.weight(1f))
         }
         DateField("Date", date, onPick = { onSetRoute(originCity, destCity, it) })
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = onSearch, modifier = Modifier.weight(1f)) { Text("Search") }
-            OutlinedButton(onClick = onOpenFilters) { Text("Filters") }
+        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.sm)) {
+            PrimaryButton("Search", onClick = onSearch, modifier = Modifier.weight(1f))
+            SecondaryButton("Filters", onClick = onOpenFilters, modifier = Modifier)
         }
     }
 }
@@ -152,10 +157,10 @@ private fun FiltersSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(Dimens.screen),
+            verticalArrangement = Arrangement.spacedBy(Dimens.md),
         ) {
-            Text("Filters", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text("Filters", style = MaterialTheme.typography.titleLarge)
             OutlinedTextField(
                 value = maxPrice,
                 onValueChange = { maxPrice = it.filter { c -> c.isDigit() || c == '.' } },
@@ -170,57 +175,13 @@ private fun FiltersSheet(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(
+            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.sm)) {
+                PrimaryButton(
+                    "Apply",
                     onClick = { onApply(maxPrice.toDoubleOrNull(), minSeats.toIntOrNull()) },
                     modifier = Modifier.weight(1f),
-                ) { Text("Apply") }
-                OutlinedButton(onClick = onClear) { Text("Clear") }
-            }
-        }
-    }
-}
-
-@Composable
-private fun OfferCard(offer: OfferItem, onOpenOffer: (String) -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onOpenOffer(offer.id) },
-    ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Avatar(offer.driver?.displayName)
-                    Text(
-                        offer.driver?.displayName ?: "Driver",
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                }
-                offer.matchScore?.let { MatchBadge(it) }
-            }
-            Text(
-                "${offer.origin.cityName}  →  ${offer.destination.cityName}",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                "${offer.departureDate} · ${offer.departureTime}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.outline,
-            )
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("${offer.availableSeats} seat(s) left", style = MaterialTheme.typography.bodyMedium)
-                Text(
-                    "${offer.pricePerSeat} DT",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
                 )
+                SecondaryButton("Clear", onClick = onClear, modifier = Modifier)
             }
         }
     }

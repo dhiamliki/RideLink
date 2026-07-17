@@ -156,6 +156,18 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 
 ## Working log (append newest at top)
 
+- 2026-07-17 — Styling pass (Android, visual only — no logic/nav/API changes): introduced a proper
+  design system in the theme layer — refined indigo palette + neutral surfaces + semantic
+  success/warning/danger colours (Color.kt), a clear type scale (Type.kt), rounded shapes (Shape.kt),
+  and light/dark schemes wired through RideLinkTheme. Added reusable components in ui/common
+  (Dimens spacing scale, PrimaryButton, SecondaryButton, AppCard, SectionHeader, RideCard, BrandMark,
+  refined StatusPill (colour-by-status), MatchBadge, icon EmptyState, ContactCard). Applied across every
+  screen: feed + requests now share RideCard; auth (phone/OTP/profile setup) got a brand mark + primary
+  buttons; create offer/request use grouped section cards; ride/request detail, my bookings, my proposals,
+  requests-on-my-ride, proposals-on-my-request, blocked users all use the shared card + pills + primary/
+  secondary buttons; profile redesigned with a header card + grouped actions; neutral app background so
+  cards pop; top bar + bottom nav on surface. `./gradlew assembleDebug` BUILD SUCCESSFUL on the pinned JDK.
+
 - 2026-07-17 — Phase 3 Android report + block UI (3b): extended ApiService (reportUser, blockUser,
   unblockUser, blockedUsers) + models. A reusable `SafetyMenu` (overflow → Report / Block) with a
   reason-picker report dialog (HARASSMENT/UNSAFE_DRIVING/NO_SHOW/INAPPROPRIATE/OTHER + optional detail,

@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -17,9 +15,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.runtime.LaunchedEffect
+import com.ridelink.app.ui.common.BrandMark
+import com.ridelink.app.ui.common.Dimens
+import com.ridelink.app.ui.common.PrimaryButton
 
 @Composable
 fun PhoneScreen(
@@ -35,12 +35,17 @@ fun PhoneScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+            .padding(Dimens.xl),
+        verticalArrangement = Arrangement.spacedBy(Dimens.lg, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        BrandMark()
         Text("RideLink", style = MaterialTheme.typography.headlineLarge)
-        Text("Sign in with your phone", style = MaterialTheme.typography.bodyMedium)
+        Text(
+            "Share the ride, split the cost.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
 
         OutlinedTextField(
             value = state.phoneNumber,
@@ -48,6 +53,7 @@ fun PhoneScreen(
             label = { Text("Phone number") },
             placeholder = { Text("+216 12 345 678") },
             singleLine = true,
+            shape = MaterialTheme.shapes.small,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
             isError = state.error != null,
             modifier = Modifier.fillMaxWidth(),
@@ -57,13 +63,6 @@ fun PhoneScreen(
             Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
         }
 
-        Button(
-            onClick = viewModel::sendCode,
-            enabled = !state.loading,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            if (state.loading) CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp))
-            Text("Send code")
-        }
+        PrimaryButton("Send code", onClick = viewModel::sendCode, loading = state.loading)
     }
 }

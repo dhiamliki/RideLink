@@ -3,6 +3,7 @@ package com.ridelink.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import com.ridelink.app.ui.navigation.AppNavHost
 import com.ridelink.app.ui.theme.RideLinkTheme
@@ -15,7 +16,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             RideLinkTheme {
-                Surface {
+                Surface(color = MaterialTheme.colorScheme.background) {
                     AppNavHost()
                 }
             }

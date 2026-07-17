@@ -10,13 +10,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -31,9 +28,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ridelink.app.data.remote.OfferDetail
+import com.ridelink.app.ui.common.AppCard
 import com.ridelink.app.ui.common.Avatar
+import com.ridelink.app.ui.common.Dimens
 import com.ridelink.app.ui.common.ErrorState
 import com.ridelink.app.ui.common.LoadingState
+import com.ridelink.app.ui.common.PrimaryButton
 import com.ridelink.app.ui.common.SafetyMenu
 import com.ridelink.app.ui.common.SeatStepper
 
@@ -108,7 +108,7 @@ private fun DetailContent(
             Column {
                 Text(offer.driver?.displayName ?: "Driver", style = MaterialTheme.typography.titleMedium)
                 offer.driver?.rating?.let {
-                    Text("★ ${"%.1f".format(it)}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
+                    Text("★ ${"%.1f".format(it)}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -119,14 +119,12 @@ private fun DetailContent(
             fontWeight = FontWeight.Bold,
         )
 
-        Card(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                InfoRow("Departure", "${offer.departureDate} · ${offer.departureTime}")
-                InfoRow("Seats", "${offer.availableSeats} of ${offer.totalSeats} available")
-                InfoRow("Price per seat", "${offer.pricePerSeat} DT")
-                InfoRow("Smoking", if (offer.smokingAllowed == true) "Allowed" else "Not allowed")
-                InfoRow("Pets", if (offer.petsAllowed == true) "Allowed" else "Not allowed")
-            }
+        AppCard {
+            InfoRow("Departure", "${offer.departureDate} · ${offer.departureTime}")
+            InfoRow("Seats", "${offer.availableSeats} of ${offer.totalSeats} available")
+            InfoRow("Price per seat", "${offer.pricePerSeat} DT")
+            InfoRow("Smoking", if (offer.smokingAllowed == true) "Allowed" else "Not allowed")
+            InfoRow("Pets", if (offer.petsAllowed == true) "Allowed" else "Not allowed")
         }
 
         offer.notes?.takeIf { it.isNotBlank() }?.let {
@@ -137,9 +135,7 @@ private fun DetailContent(
         }
 
         if (state.isOwner) {
-            Button(onClick = onViewRequests, modifier = Modifier.fillMaxWidth()) {
-                Text("View requests on this ride")
-            }
+            PrimaryButton("View requests on this ride", onClick = onViewRequests)
         } else {
             BookingSection(offer, state, onSeats, onRequest)
         }
@@ -173,28 +169,27 @@ private fun BookingSection(
             if (b is BookingState.Failed) {
                 Text(b.message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
             }
-            Button(
+            PrimaryButton(
+                text = if (offer.availableSeats > 0) "Request a seat" else "Ride is full",
                 onClick = onRequest,
                 enabled = b !is BookingState.Submitting && offer.availableSeats > 0,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(if (offer.availableSeats > 0) "Request a seat" else "Ride is full")
-            }
+                loading = b is BookingState.Submitting,
+            )
         }
     }
 }
 
 @Composable
 private fun Banner(text: String, bg: androidx.compose.ui.graphics.Color, fg: androidx.compose.ui.graphics.Color) {
-    Surface(color = bg, shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
-        Text(text, color = fg, modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.bodyMedium)
+    Surface(color = bg, contentColor = fg, shape = MaterialTheme.shapes.small, modifier = Modifier.fillMaxWidth()) {
+        Text(text, modifier = Modifier.padding(Dimens.lg), style = MaterialTheme.typography.bodyMedium)
     }
 }
 
 @Composable
 private fun InfoRow(label: String, value: String) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, color = MaterialTheme.colorScheme.outline, style = MaterialTheme.typography.bodyMedium)
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
     }
 }

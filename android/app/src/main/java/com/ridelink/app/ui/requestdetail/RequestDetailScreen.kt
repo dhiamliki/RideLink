@@ -11,13 +11,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -34,9 +31,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ridelink.app.data.remote.RequestItem
+import com.ridelink.app.ui.common.AppCard
 import com.ridelink.app.ui.common.Avatar
+import com.ridelink.app.ui.common.Dimens
 import com.ridelink.app.ui.common.ErrorState
 import com.ridelink.app.ui.common.LoadingState
+import com.ridelink.app.ui.common.PrimaryButton
 import com.ridelink.app.ui.common.SafetyMenu
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -112,7 +112,7 @@ private fun DetailContent(
             Column {
                 Text(request.passenger?.displayName ?: "Passenger", style = MaterialTheme.typography.titleMedium)
                 request.passenger?.rating?.let {
-                    Text("★ ${"%.1f".format(it)}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
+                    Text("★ ${"%.1f".format(it)}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -123,12 +123,10 @@ private fun DetailContent(
             fontWeight = FontWeight.Bold,
         )
 
-        Card(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                InfoRow("Preferred", "${request.preferredDate} · ${request.preferredTimeWindow}")
-                InfoRow("Seats needed", "${request.seatsNeeded}")
-                InfoRow("Max price per seat", request.maxPricePerSeat?.let { "$it DT" } ?: "No budget set")
-            }
+        AppCard {
+            InfoRow("Preferred", "${request.preferredDate} · ${request.preferredTimeWindow}")
+            InfoRow("Seats needed", "${request.seatsNeeded}")
+            InfoRow("Max price per seat", request.maxPricePerSeat?.let { "$it DT" } ?: "No budget set")
         }
 
         request.notes?.takeIf { it.isNotBlank() }?.let {
@@ -144,9 +142,7 @@ private fun DetailContent(
                 MaterialTheme.colorScheme.surfaceVariant,
                 MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Button(onClick = onViewProposals, modifier = Modifier.fillMaxWidth()) {
-                Text("View proposals on this request")
-            }
+            PrimaryButton("View proposals on this request", onClick = onViewProposals)
         } else {
             ProposalSection(state, onMessage, onPrice, onPropose)
         }
@@ -173,46 +169,47 @@ private fun ProposalSection(
             MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        else -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("I can take you", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        else -> Column(verticalArrangement = Arrangement.spacedBy(Dimens.md)) {
+            Text("I can take you", style = MaterialTheme.typography.titleMedium)
             OutlinedTextField(
                 value = state.message,
                 onValueChange = onMessage,
                 label = { Text("Message (optional)") },
+                shape = MaterialTheme.shapes.small,
                 modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
                 value = state.price,
                 onValueChange = onPrice,
                 label = { Text("Proposed price per seat (optional)") },
+                shape = MaterialTheme.shapes.small,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth(),
             )
             if (p is ProposalState.Failed) {
                 Text(p.message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
             }
-            Button(
+            PrimaryButton(
+                text = "I can take you",
                 onClick = onPropose,
                 enabled = p !is ProposalState.Submitting,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(if (p is ProposalState.Submitting) "Sending…" else "I can take you")
-            }
+                loading = p is ProposalState.Submitting,
+            )
         }
     }
 }
 
 @Composable
 private fun Banner(text: String, bg: androidx.compose.ui.graphics.Color, fg: androidx.compose.ui.graphics.Color) {
-    Surface(color = bg, shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
-        Text(text, color = fg, modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.bodyMedium)
+    Surface(color = bg, contentColor = fg, shape = MaterialTheme.shapes.small, modifier = Modifier.fillMaxWidth()) {
+        Text(text, modifier = Modifier.padding(Dimens.lg), style = MaterialTheme.typography.bodyMedium)
     }
 }
 
 @Composable
 private fun InfoRow(label: String, value: String) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, color = MaterialTheme.colorScheme.outline, style = MaterialTheme.typography.bodyMedium)
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
     }
 }

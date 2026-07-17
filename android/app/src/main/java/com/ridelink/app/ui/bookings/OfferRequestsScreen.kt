@@ -11,13 +11,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -27,16 +24,19 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ridelink.app.data.remote.BookingRequest
+import com.ridelink.app.ui.common.AppCard
 import com.ridelink.app.ui.common.Avatar
 import com.ridelink.app.ui.common.ContactCard
+import com.ridelink.app.ui.common.Dimens
 import com.ridelink.app.ui.common.EmptyState
 import com.ridelink.app.ui.common.ErrorState
 import com.ridelink.app.ui.common.LoadingState
+import com.ridelink.app.ui.common.PrimaryButton
 import com.ridelink.app.ui.common.SafetyMenu
+import com.ridelink.app.ui.common.SecondaryButton
 import com.ridelink.app.ui.common.StatusPill
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,8 +74,8 @@ fun OfferRequestsScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(horizontal = Dimens.screen, vertical = Dimens.lg),
+                            verticalArrangement = Arrangement.spacedBy(Dimens.md),
                         ) {
                             items(state.requests, key = { it.id }) {
                                 RequestCard(it, working == it.id, viewModel::accept, viewModel::decline,
@@ -100,43 +100,33 @@ private fun RequestCard(
     val status = request.status.uppercase()
     val passengerName = request.passenger?.displayName ?: "Passenger"
     val passengerId = request.passenger?.id
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Avatar(request.passenger?.displayName)
-                    Text(passengerName, style = MaterialTheme.typography.titleMedium)
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    StatusPill(request.status)
-                    if (passengerId != null) {
-                        SafetyMenu(
-                            targetName = passengerName,
-                            onReport = { reason, detail -> onReport(passengerId, reason, detail) },
-                            onBlock = { onBlock(passengerId) },
-                        )
-                    }
+    AppCard {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Dimens.sm), modifier = Modifier.weight(1f)) {
+                Avatar(request.passenger?.displayName, size = 38)
+                Text(passengerName, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                StatusPill(request.status)
+                if (passengerId != null) {
+                    SafetyMenu(
+                        targetName = passengerName,
+                        onReport = { reason, detail -> onReport(passengerId, reason, detail) },
+                        onBlock = { onBlock(passengerId) },
+                    )
                 }
             }
-            Text("${request.seatsBooked} seat(s) requested", style = MaterialTheme.typography.bodyMedium)
+        }
+        Text("${request.seatsBooked} seat(s) requested", style = MaterialTheme.typography.bodyMedium)
 
-            if (status == "ACCEPTED") {
-                ContactCard(request.counterpartContact?.displayName, request.counterpartContact?.phoneNumber)
-            }
+        if (status == "ACCEPTED") {
+            ContactCard(request.counterpartContact?.displayName, request.counterpartContact?.phoneNumber)
+        }
 
-            if (status == "REQUESTED") {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = { onAccept(request.id) },
-                        enabled = !working,
-                        modifier = Modifier.weight(1f),
-                    ) { Text("Accept") }
-                    OutlinedButton(
-                        onClick = { onDecline(request.id) },
-                        enabled = !working,
-                        modifier = Modifier.weight(1f),
-                    ) { Text("Decline") }
-                }
+        if (status == "REQUESTED") {
+            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.sm)) {
+                PrimaryButton("Accept", onClick = { onAccept(request.id) }, enabled = !working, modifier = Modifier.weight(1f))
+                SecondaryButton("Decline", onClick = { onDecline(request.id) }, enabled = !working, modifier = Modifier.weight(1f))
             }
         }
     }

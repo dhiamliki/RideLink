@@ -10,8 +10,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -26,12 +24,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ridelink.app.data.Cities
+import com.ridelink.app.ui.common.AppCard
 import com.ridelink.app.ui.common.CityDropdown
 import com.ridelink.app.ui.common.DateField
+import com.ridelink.app.ui.common.Dimens
+import com.ridelink.app.ui.common.PrimaryButton
 import com.ridelink.app.ui.common.SeatStepper
+import com.ridelink.app.ui.common.SectionHeader
 import com.ridelink.app.ui.common.StringDropdown
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,38 +63,44 @@ fun CreateRequestScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(Dimens.screen),
+            verticalArrangement = Arrangement.spacedBy(Dimens.lg),
         ) {
-            CityDropdown("From", s.origin, Cities.ALL, { c -> viewModel.update { it.copy(origin = c) } })
-            CityDropdown("To", s.destination, Cities.ALL, { c -> viewModel.update { it.copy(destination = c) } })
-            DateField("Preferred date", s.date, onPick = { d -> viewModel.update { it.copy(date = d) } })
-            StringDropdown("Time window", s.timeWindow, TIME_WINDOWS, { w -> viewModel.update { it.copy(timeWindow = w) } })
-            SeatStepper("Seats needed", s.seats, onChange = { v -> viewModel.update { it.copy(seats = v) } })
-            OutlinedTextField(
-                value = s.maxPrice,
-                onValueChange = { v -> viewModel.update { st -> st.copy(maxPrice = v.filter { c -> c.isDigit() || c == '.' }) } },
-                label = { Text("Max price per seat (DT, optional)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                modifier = Modifier.fillMaxWidth(),
-            )
-            OutlinedTextField(
-                value = s.notes,
-                onValueChange = { v -> viewModel.update { it.copy(notes = v) } },
-                label = { Text("Notes (optional)") },
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            s.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-
-            Button(
-                onClick = viewModel::submit,
-                enabled = !s.submitting,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                if (s.submitting) CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp))
-                Text("Post request")
+            SectionHeader("Route")
+            AppCard {
+                CityDropdown("From", s.origin, Cities.ALL, { c -> viewModel.update { it.copy(origin = c) } })
+                CityDropdown("To", s.destination, Cities.ALL, { c -> viewModel.update { it.copy(destination = c) } })
             }
+
+            SectionHeader("When")
+            AppCard {
+                DateField("Preferred date", s.date, onPick = { d -> viewModel.update { it.copy(date = d) } })
+                StringDropdown("Time window", s.timeWindow, TIME_WINDOWS, { w -> viewModel.update { it.copy(timeWindow = w) } })
+            }
+
+            SectionHeader("Details")
+            AppCard {
+                SeatStepper("Seats needed", s.seats, onChange = { v -> viewModel.update { it.copy(seats = v) } })
+                OutlinedTextField(
+                    value = s.maxPrice,
+                    onValueChange = { v -> viewModel.update { st -> st.copy(maxPrice = v.filter { c -> c.isDigit() || c == '.' }) } },
+                    label = { Text("Max price per seat (DT, optional)") },
+                    shape = MaterialTheme.shapes.small,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = s.notes,
+                    onValueChange = { v -> viewModel.update { it.copy(notes = v) } },
+                    label = { Text("Notes (optional)") },
+                    shape = MaterialTheme.shapes.small,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            s.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
+
+            PrimaryButton("Post request", onClick = viewModel::submit, loading = s.submitting)
         }
     }
 }

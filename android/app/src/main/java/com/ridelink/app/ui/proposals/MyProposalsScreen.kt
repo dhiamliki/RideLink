@@ -11,12 +11,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -27,14 +25,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ridelink.app.data.remote.Proposal
+import com.ridelink.app.ui.common.AppCard
 import com.ridelink.app.ui.common.ContactCard
+import com.ridelink.app.ui.common.Dimens
 import com.ridelink.app.ui.common.EmptyState
 import com.ridelink.app.ui.common.ErrorState
 import com.ridelink.app.ui.common.LoadingState
 import com.ridelink.app.ui.common.SafetyMenu
+import com.ridelink.app.ui.common.SecondaryButton
 import com.ridelink.app.ui.common.StatusPill
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -72,8 +73,8 @@ fun MyProposalsScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(horizontal = Dimens.screen, vertical = Dimens.lg),
+                            verticalArrangement = Arrangement.spacedBy(Dimens.md),
                         ) {
                             items(state.proposals, key = { it.id }) {
                                 ProposalCard(it, working == it.id, viewModel::withdraw,
@@ -99,42 +100,36 @@ private fun ProposalCard(
     // Counterpart on this screen is the request owner; their name arrives via `contact` once ACCEPTED.
     val ownerId = proposal.request?.passengerId
     val ownerName = proposal.contact?.displayName ?: "Passenger"
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(route ?: "Request", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    StatusPill(proposal.status)
-                    if (ownerId != null) {
-                        SafetyMenu(
-                            targetName = ownerName,
-                            onReport = { reason, detail -> onReport(ownerId, reason, detail) },
-                            onBlock = { onBlock(ownerId) },
-                        )
-                    }
+    AppCard {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text(route ?: "Request", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                StatusPill(proposal.status)
+                if (ownerId != null) {
+                    SafetyMenu(
+                        targetName = ownerName,
+                        onReport = { reason, detail -> onReport(ownerId, reason, detail) },
+                        onBlock = { onBlock(ownerId) },
+                    )
                 }
             }
-            proposal.request?.preferredDate?.let {
-                Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
-            }
-            proposal.message?.takeIf { it.isNotBlank() }?.let {
-                Text("“$it”", style = MaterialTheme.typography.bodyMedium)
-            }
-            proposal.pricePerSeat?.let {
-                Text("Proposed $it DT per seat", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-            }
+        }
+        proposal.request?.preferredDate?.let {
+            Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        proposal.message?.takeIf { it.isNotBlank() }?.let {
+            Text("“$it”", style = MaterialTheme.typography.bodyMedium)
+        }
+        proposal.pricePerSeat?.let {
+            Text("Proposed $it DT per seat", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        }
 
-            if (status == "ACCEPTED") {
-                ContactCard(proposal.contact?.displayName, proposal.contact?.phoneNumber)
-            }
+        if (status == "ACCEPTED") {
+            ContactCard(proposal.contact?.displayName, proposal.contact?.phoneNumber)
+        }
 
-            if (status == "PROPOSED") {
-                OutlinedButton(
-                    onClick = { onWithdraw(proposal.id) },
-                    enabled = !working,
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text(if (working) "Withdrawing…" else "Withdraw") }
-            }
+        if (status == "PROPOSED") {
+            SecondaryButton(if (working) "Withdrawing…" else "Withdraw", onClick = { onWithdraw(proposal.id) }, enabled = !working)
         }
     }
 }
