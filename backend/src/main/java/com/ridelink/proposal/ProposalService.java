@@ -7,6 +7,7 @@ import com.ridelink.proposal.dto.RequestSummary;
 import com.ridelink.ride.RideRequest;
 import com.ridelink.ride.RideRequestRepository;
 import com.ridelink.ride.RideRequestStatus;
+import com.ridelink.safety.SafetyService;
 import com.ridelink.user.UserRepository;
 import java.time.Instant;
 import java.util.List;
@@ -29,12 +30,15 @@ public class ProposalService {
     private final RequestProposalRepository proposalRepository;
     private final RideRequestRepository requestRepository;
     private final UserRepository userRepository;
+    private final SafetyService safetyService;
 
     public ProposalService(RequestProposalRepository proposalRepository,
-                           RideRequestRepository requestRepository, UserRepository userRepository) {
+                           RideRequestRepository requestRepository, UserRepository userRepository,
+                           SafetyService safetyService) {
         this.proposalRepository = proposalRepository;
         this.requestRepository = requestRepository;
         this.userRepository = userRepository;
+        this.safetyService = safetyService;
     }
 
     @Transactional
@@ -43,6 +47,7 @@ public class ProposalService {
         if (request.getPassengerId().equals(driverId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot propose on your own request");
         }
+        safetyService.assertNotBlocked(driverId, request.getPassengerId());
         if (request.getStatus() != RideRequestStatus.ACTIVE) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Request is not active");
         }
@@ -74,6 +79,7 @@ public class ProposalService {
         RideRequest request = requireRequest(proposal.getRequestId());
         requireOwner(request, passengerId);
         requireStatus(proposal, ProposalStatus.PROPOSED);
+        safetyService.assertNotBlocked(passengerId, proposal.getDriverId());
 
         Instant now = Instant.now();
         proposal.setStatus(ProposalStatus.ACCEPTED);
@@ -134,9 +140,12 @@ public class ProposalService {
             UUID counterpartId = viewerId.equals(proposal.getDriverId())
                     ? request.getPassengerId()
                     : proposal.getDriverId();
-            contact = userRepository.findById(counterpartId)
-                    .map(u -> new ContactDto(u.getDisplayName(), u.getPhoneNumber()))
-                    .orElse(null);
+            // Defensive: never reveal a blocked counterpart's contact.
+            if (!safetyService.isBlockedBetween(viewerId, counterpartId)) {
+                contact = userRepository.findById(counterpartId)
+                        .map(u -> new ContactDto(u.getDisplayName(), u.getPhoneNumber()))
+                        .orElse(null);
+            }
         }
         RequestSummary summary = request == null ? null : RequestSummary.from(request);
         return ProposalResponse.of(proposal, summary, contact);

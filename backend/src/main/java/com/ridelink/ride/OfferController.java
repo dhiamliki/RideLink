@@ -50,12 +50,13 @@ public class OfferController {
     }
 
     @GetMapping("/{id}")
-    public OfferResponse get(@PathVariable UUID id) {
-        return offerService.get(id);
+    public OfferResponse get(@AuthenticationPrincipal UUID userId, @PathVariable UUID id) {
+        return offerService.get(userId, id);
     }
 
     @GetMapping
     public PagedResponse<OfferResponse> search(
+            @AuthenticationPrincipal UUID userId,
             @RequestParam(required = false) String originCity,
             @RequestParam(required = false) String destCity,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
@@ -65,7 +66,7 @@ public class OfferController {
             @RequestParam(required = false) Boolean petsAllowed,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return offerService.search(originCity, destCity, date, minSeats, maxPrice, smokingAllowed,
+        return offerService.search(userId, originCity, destCity, date, minSeats, maxPrice, smokingAllowed,
                 petsAllowed, page, Math.min(Math.max(size, 1), 100));
     }
 }

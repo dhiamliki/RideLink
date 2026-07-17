@@ -4,6 +4,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface RequestProposalRepository extends JpaRepository<RequestProposal, UUID> {
 
@@ -15,4 +17,12 @@ public interface RequestProposalRepository extends JpaRepository<RequestProposal
 
     boolean existsByRequestIdAndDriverIdAndStatusIn(UUID requestId, UUID driverId,
                                                     Collection<ProposalStatus> statuses);
+
+    // Proposals in the given status linking the two users as driver<->request-owner (either
+    // direction). Used to auto-decline pending proposals when a block is created (SafetyService).
+    @Query("select p from RequestProposal p, RideRequest r where p.requestId = r.id and p.status = :status "
+            + "and ((p.driverId = :u1 and r.passengerId = :u2) "
+            + "or (p.driverId = :u2 and r.passengerId = :u1))")
+    List<RequestProposal> findByStatusBetween(@Param("u1") UUID u1, @Param("u2") UUID u2,
+                                              @Param("status") ProposalStatus status);
 }

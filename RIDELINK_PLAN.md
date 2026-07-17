@@ -86,35 +86,38 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 
 ## Phase 1 — Authentication (phone-first, OTP stubbed)
 
-- [x] User + auth data model; Flyway migration
-- [x] Phone signup: request OTP (dev = code logged/returned, no real SMS), verify OTP -> account
-- [x] JWT access + refresh tokens; refresh endpoint; secure token handling
-- [x] Profile: name, photo (upload -> storage), bio, languages; `GET/PUT /api/me`
-- [x] Android: phone entry -> OTP screen -> verified -> token stored -> profile setup
+- [ ] User + auth data model; Flyway migration
+- [ ] Phone signup: request OTP (dev = code logged/returned, no real SMS), verify OTP -> account
+- [ ] JWT access + refresh tokens; refresh endpoint; secure token handling
+- [ ] Profile: name, photo (upload -> storage), bio, languages; `GET/PUT /api/me`
+- [ ] Android: phone entry -> OTP screen -> verified -> token stored -> profile setup
 - [ ] End to end: a user signs up on the phone and stays logged in
 
 ## Phase 2 — Marketplace core (the soul — one full journey)
 
-- [x] Ride offer: create/edit/cancel (origin, destination, date, time, seats, price, notes)
-- [x] Ride request: create/edit/cancel (origin, destination, time window, budget, notes)
-- [x] Browse + search + filter both (date, price, seats, rating) — REST endpoints
-- [x] Simple `MatchingStrategy`: rank results by route similarity + date/time + rating
-- [x] Booking: passenger requests a seat -> driver accepts/declines -> seats decrement atomically
-- [x] Contact revealed on accept; booking states (requested/accepted/declined/cancelled)
-- [x] Request-proposal handshake: driver proposes on a request -> passenger accepts/declines;
-      accept fulfills the request + auto-declines other proposals; contact revealed on accept (backend)
-- [x] Android screens: feed (ranked), post offer, post request, detail, request/accept flow
-      (feed + post offer/request done in 2d; detail + request/accept flow done in 2e)
-- [x] Android request-proposal UI: request detail + "I can take you" form, My proposals (driver,
-      withdraw), Proposals on my request (passenger, accept/decline + contact reveal) (2g)
+- [ ] Ride offer: create/edit/cancel (origin, destination, date, time, seats, price, notes)
+- [ ] Ride request: create/edit/cancel (origin, destination, time window, budget, notes)
+- [ ] Browse + search + filter both (date, price, seats, rating) — REST endpoints
+- [ ] Simple `MatchingStrategy`: rank results by route similarity + date/time + rating
+- [ ] Booking: passenger requests a seat -> driver accepts/declines -> seats decrement atomically
+- [ ] Contact revealed on accept; booking states (requested/accepted/declined/cancelled)
+- [ ] Android screens: feed (ranked), post offer, post request, detail, request/accept flow
 - [ ] End to end: post -> discover -> request -> accept -> confirmed, on the phone
 
-## Phase 3 — Trust (minimum viable)
+## Phase 3 — Safety (report/block only — NO ratings)
 
-- [ ] Ratings + reviews after a completed trip (stars + comment), aggregated on profile
-- [ ] Report user + block user (basic)
-- [ ] Trip history per user
-- [ ] Android: profile view with rating/reviews, rate-after-trip, report/block
+> Product identity: RideLink is spontaneous peer cost-sharing ("I'm going there anyway,
+> I'll take someone and split costs"), NOT a professional/gig driver platform. So there is
+> deliberately NO rating or reputation system — it would push toward power-drivers and
+> gig-work. Kept: report + block, as a pure safety valve (not a score, not a ranking).
+> This also supports the legal framing (cost-sharing, not paid transport).
+
+- [x] Report a user (reason + optional detail); stored for admin review (Phase 8) *(backend, 3a)*
+- [x] Block a user: a blocked user cannot book/propose/contact you, and drops out of your views *(backend, 3a)*
+- [x] Enforce blocks across the marketplace (booking, proposal, contact reveal) *(backend, 3a)*
+- [ ] Android: report + block actions (from a user's info / an accepted connection), a "blocked
+      users" list to unblock
+- [ ] (Profile shows NO rating/review section — just name, photo, bio, member-since)
 
 ## Phase 4 — Real-time chat + notifications
 
@@ -153,86 +156,17 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 
 ## Working log (append newest at top)
 
-- 2026-07-17 — Phase 2 Android request-proposal flow (2g): mirror of the 2e offer/booking screens.
-  Tapping a request card in the Requests tab opens Request detail (route, preferred date/time window,
-  seats, max price, notes, passenger). A driver sees an "I can take you" form (optional message +
-  price) → POST proposal → "proposed" banner; 409 (already proposed) and 403 (own request → hide form,
-  show "your request" + link to its proposals) handled. Profile gained "My proposals" (driver view:
-  status pill, withdraw while PROPOSED, contact revealed on ACCEPTED). Owner's request detail links to
-  "Proposals on my request" (passenger view: accept/decline, message + proposed price, contact reveal;
-  on accept the request is fulfilled and others show declined). Verified field shapes against the
-  running backend (contact field is `contact`; owner view exposes only `driverId`, so driver name
-  surfaces via `contact` once accepted). `./gradlew assembleDebug` BUILD SUCCESSFUL on the pinned JDK.
-  Two-user manual test: A posts a request; B opens it → "I can take you" (+message/price); A opens
-  proposals on their request → Accept; both see each other's contact; the request drops from A's active
-  Requests list.
+- 2026-07-17 — Phase 3 report + block with enforcement (3a, backend, Flyway V6 `report`/`block`):
+  new `com.ridelink.safety` package. Endpoints (token-gated): POST /api/reports (400 on self, stored
+  OPEN for future admin review, 201), POST /api/blocks (400 on self, idempotent, 204), DELETE
+  /api/blocks/{blockedUserId} (204), GET /api/blocks (blocked users' id+name+photo). Blocks are
+  treated as MUTUAL for protection. Enforcement centralized in `SafetyService` (assertNotBlocked /
+  isBlockedBetween / blockedUserIdsFor), reused by booking (request+accept), proposal (propose+accept),
+  browse/search + detail (offers & requests hidden; detail → 404), and the contact-reveal guard.
+  Creating a block also auto-declines any pending booking (REQUESTED) / proposal (PROPOSED) between the
+  pair so an in-flight handshake can't be accepted after the block. Verified with Postgres+dev, two
+  users: 21/21 checks — block hides listings both ways, book/propose across a block → 403, detail →
+  404, report/block self → 400, no token → 401, list/unblock restores visibility + booking.
 
-- 2026-07-17 — Phase 2 request-proposal handshake (2f, Flyway V5 `request_proposal`): mirror of the
-  booking flow with roles flipped — a driver proposes on a passenger's ACTIVE ride_request
-  (POST /api/requests/{id}/proposals), can withdraw; the request owner accepts/declines. Accept is
-  transactional: proposal -> ACCEPTED, request -> FULFILLED (drops from active browse), other pending
-  proposals auto-declined, contact (name+phone) revealed both ways. Own-request propose 403,
-  double-propose 409, non-owner accept 403, contact hidden pre-accept, 401 without token — all verified
-  end-to-end against Postgres/dev with three users (18/18 checks).
-
-- 2026-07-16 — Phase 2 Android ride detail + booking flow (2e): tap a feed card → ride detail
-  (full route/date/time/seats/price/notes/smoking-pets/driver+rating). "Request a seat" with a
-  seats selector when >1 available → POST booking → "requested" banner; 409 (full/already booked)
-  and 403 (own ride) handled as terminal blocked states, and owners see "View requests on this
-  ride" instead of the button. My bookings (passenger, from Profile) lists GET /bookings/mine with
-  status pill; on ACCEPTED reveals the driver's phone + coordinate note; cancel refreshes the list.
-  Requests-on-my-ride (driver, from the owner's ride detail) lists GET /offers/{id}/bookings with
-  Accept/Decline per request → refresh reflects seats; passenger contact shown on accept.
-  Loading/empty/error + pull-to-refresh throughout; reuses the Retrofit/auth interceptor and the
-  indigo theme. Manual two-user test: A posts an offer; B opens it → Request a seat; A opens
-  requests on the ride → Accept; both see each other's contact; B cancels → seats restore.
-  `./gradlew assembleDebug` clean (pinned Temurin JDK). Booking-list DTOs modeled leniently
-  (defaulted/nullable) against the documented contract since backend source wasn't read.
-- 2026-07-16 — Phase 2 Android feed + create screens: brand indigo (#5B4FE0) applied as Compose
-  theme primary. Bottom-nav shell (Home/Requests/Profile + Post FAB). Feed lists ranked offers
-  with driver avatar, route, date/time, seats, price, and a match badge; search bar
-  (from/to/date) + filters bottom sheet (max price, min seats) + pull-to-refresh. Requests tab
-  lists ride requests symmetrically. Post -> chooser -> Create Offer / Create Request with a
-  hardcoded Tunisian-city picker (name+lat/lon), date/time pickers, seats stepper, toggles; on
-  submit returns to the feed/requests tab (reloads on entry). Loading/empty/error states
-  throughout. Reuses the existing Retrofit/auth interceptor. `./gradlew assembleDebug` clean.
-  (Detail + request/accept UI is 2e.) Note: modeled the real backend JSON — nested
-  origin/destination objects + PagedResponse — not the flattened shape sketched in the brief.
-- 2026-07-16 — Phase 2 booking handshake (Flyway V4 `booking`): request -> accept/decline ->
-  cancel, all token-gated with owner/passenger checks. Seats change only on ACCEPT (and restore
-  on cancel of an accepted booking) via an atomic conditional UPDATE on `ride_offer`
-  (`available_seats >= n` guard, 0 rows -> 409) — verified oversell-safe under a concurrent
-  double-accept into the last seat (one OK, one 409, seats=0). Counterpart contact
-  (phone + name) revealed to both parties only on ACCEPTED. Verified via curl: full flow +
-  own-booking 403, double-book 409, non-owner accept 403, 0-seat 409, contact hidden pre-accept,
-  401 without token.
-- 2026-07-16 — Phase 2 ride endpoints: offers + requests CRUD (`POST/PUT/DELETE/GET
-  /api/offers` + `/api/requests`, owner-only edit/cancel while ACTIVE, soft cancel) and
-  browse/search/filter lists (JPA Specifications: originCity/destCity/date/minSeats/maxPrice/
-  smoking/pets; active + availableSeats>0) with in-memory pagination. Ranking behind a
-  `MatchingStrategy` interface + `SimpleMatchingStrategy` (exact-city > date-closeness > recency)
-  returning a 0-100 `matchScore`; DTOs carry the poster's public summary. Verified via curl
-  (create/browse/filter include+exclude/edit/request/cancel drop-out/403 owner-only/401).
-- 2026-07-16 — Phase 2 data model: `ride_offer` + `ride_request` tables (Flyway V3) with a shared
-  embedded `Location` (city_name + lat + lon) for origin/destination; coordinates stored now for
-  Phase 5 route matching. Enums for status/time-window, `numeric(10,3)` prices (DT millimes),
-  FKs to users, and indexes on (status, date) + city-name columns for 2b browse/filter. JPA
-  entities + repositories (finder stubs only, no search logic). Boots + validates + V3 applies
-  cleanly. (No dedicated data-model checkbox in Phase 2; the create/edit/cancel boxes are 2b.)
-- 2026-07-16 — Phase 1 Android auth flow: Phone -> OTP (dev code prefilled) -> ProfileSetup (new
-  user) -> Home greeting, with startup session check and Logout. Tokens in DataStore
-  (`TokenStore`); OkHttp `AuthInterceptor` attaches the Bearer token and refreshes once on 401
-  (clears + routes to login on failure via `SessionManager`). MVVM + Hilt + Navigation Compose +
-  Retrofit; Material 3. `assembleDebug` builds clean. Manual test path documented in the commit.
-- 2026-07-16 — Phase 1 profile endpoints: `GET /api/me` (adds `isProfileComplete` =
-  displayName set), `PUT /api/me` (displayName required + bio, phone/verified immutable),
-  `POST /api/me/photo` (jpeg/png, <=5MB) with local filesystem storage behind a `PhotoStorage`
-  interface (cloud swaps in later) served via `GET /api/me/photo/{id}`. DTOs only; all endpoints
-  require a valid access token. Verified end-to-end via curl.
-- 2026-07-16 — Phase 1 backend auth: phone-OTP request/verify (BCrypt-hashed codes, 5-min TTL,
-  30s resend throttle, 5-attempt lockout), JWT access (15m) + rotating refresh (30d, SHA-256
-  hashed) with refresh endpoint; JWT security filter (stateless; `/api/auth/**` + `/api/health`
-  public). OTP delivery stubbed behind `OtpSender` (`DevOtpSender` logs; `devCode` returned only
-  under the `dev` profile). Verified end-to-end via curl.
 - _(date)_ — Plan created. v1 scope locked (auth/marketplace/simple-match/chat/ratings);
   admin/live-GPS/route-overlap/wallet/real-SMS deferred. Next: Phase 0.

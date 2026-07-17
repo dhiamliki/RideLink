@@ -5,6 +5,7 @@ import com.ridelink.booking.dto.ContactDto;
 import com.ridelink.ride.RideOffer;
 import com.ridelink.ride.RideOfferRepository;
 import com.ridelink.ride.RideOfferStatus;
+import com.ridelink.safety.SafetyService;
 import com.ridelink.user.UserRepository;
 import java.time.Instant;
 import java.util.List;
@@ -26,12 +27,14 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final RideOfferRepository offerRepository;
     private final UserRepository userRepository;
+    private final SafetyService safetyService;
 
     public BookingService(BookingRepository bookingRepository, RideOfferRepository offerRepository,
-                          UserRepository userRepository) {
+                          UserRepository userRepository, SafetyService safetyService) {
         this.bookingRepository = bookingRepository;
         this.offerRepository = offerRepository;
         this.userRepository = userRepository;
+        this.safetyService = safetyService;
     }
 
     @Transactional
@@ -40,6 +43,7 @@ public class BookingService {
         if (offer.getDriverId().equals(passengerId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot book your own offer");
         }
+        safetyService.assertNotBlocked(passengerId, offer.getDriverId());
         if (offer.getStatus() != RideOfferStatus.ACTIVE) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Offer is not active");
         }
@@ -59,6 +63,7 @@ public class BookingService {
         RideOffer offer = requireOffer(booking.getOfferId());
         requireDriver(offer, driverId);
         requireStatus(booking, BookingStatus.REQUESTED);
+        safetyService.assertNotBlocked(driverId, booking.getPassengerId());
 
         // Atomic guarded decrement; 0 rows means the seats are gone -> fail, leave REQUESTED.
         if (offerRepository.decrementAvailableSeats(offer.getId(), booking.getSeatsBooked()) == 0) {
@@ -125,9 +130,12 @@ public class BookingService {
             UUID counterpartId = viewerId.equals(booking.getPassengerId())
                     ? offer.getDriverId()
                     : booking.getPassengerId();
-            contact = userRepository.findById(counterpartId)
-                    .map(u -> new ContactDto(u.getDisplayName(), u.getPhoneNumber()))
-                    .orElse(null);
+            // Defensive: never reveal a blocked counterpart's contact even on an old ACCEPTED booking.
+            if (!safetyService.isBlockedBetween(viewerId, counterpartId)) {
+                contact = userRepository.findById(counterpartId)
+                        .map(u -> new ContactDto(u.getDisplayName(), u.getPhoneNumber()))
+                        .orElse(null);
+            }
         }
         return BookingResponse.of(booking, contact);
     }

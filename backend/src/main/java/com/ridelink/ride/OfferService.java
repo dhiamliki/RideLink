@@ -7,6 +7,7 @@ import com.ridelink.ride.dto.UserSummary;
 import com.ridelink.ride.match.MatchCandidate;
 import com.ridelink.ride.match.MatchQuery;
 import com.ridelink.ride.match.MatchingStrategy;
+import com.ridelink.safety.SafetyService;
 import com.ridelink.user.User;
 import com.ridelink.user.UserRepository;
 import jakarta.persistence.criteria.Predicate;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.data.jpa.domain.Specification;
@@ -30,12 +32,14 @@ public class OfferService {
     private final RideOfferRepository offerRepository;
     private final UserRepository userRepository;
     private final MatchingStrategy matchingStrategy;
+    private final SafetyService safetyService;
 
     public OfferService(RideOfferRepository offerRepository, UserRepository userRepository,
-                        MatchingStrategy matchingStrategy) {
+                        MatchingStrategy matchingStrategy, SafetyService safetyService) {
         this.offerRepository = offerRepository;
         this.userRepository = userRepository;
         this.matchingStrategy = matchingStrategy;
+        this.safetyService = safetyService;
     }
 
     @Transactional
@@ -80,13 +84,17 @@ public class OfferService {
     }
 
     @Transactional(readOnly = true)
-    public OfferResponse get(UUID offerId) {
+    public OfferResponse get(UUID viewerId, UUID offerId) {
         RideOffer offer = requireOffer(offerId);
+        // Hide a blocked user's offer from existence (avoid leaking that it exists).
+        if (safetyService.isBlockedBetween(viewerId, offer.getDriverId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Offer not found");
+        }
         return OfferResponse.of(offer, driverSummary(offer.getDriverId()), null);
     }
 
     @Transactional(readOnly = true)
-    public PagedResponse<OfferResponse> search(String originCity, String destCity, LocalDate date,
+    public PagedResponse<OfferResponse> search(UUID viewerId, String originCity, String destCity, LocalDate date,
                                                Integer minSeats, BigDecimal maxPrice, Boolean smokingAllowed,
                                                Boolean petsAllowed, int page, int size) {
         Specification<RideOffer> spec = (root, q, cb) -> {
@@ -117,7 +125,10 @@ public class OfferService {
             return cb.and(ps.toArray(new Predicate[0]));
         };
 
-        List<RideOffer> found = offerRepository.findAll(spec);
+        Set<UUID> blocked = safetyService.blockedUserIdsFor(viewerId);
+        List<RideOffer> found = offerRepository.findAll(spec).stream()
+                .filter(o -> !blocked.contains(o.getDriverId()))
+                .toList();
         MatchQuery query = new MatchQuery(originCity, destCity, date);
         Map<UUID, UserSummary> drivers = summaries(found.stream().map(RideOffer::getDriverId).toList());
 

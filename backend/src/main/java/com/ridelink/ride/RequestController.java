@@ -49,18 +49,19 @@ public class RequestController {
     }
 
     @GetMapping("/{id}")
-    public RequestResponse get(@PathVariable UUID id) {
-        return requestService.get(id);
+    public RequestResponse get(@AuthenticationPrincipal UUID userId, @PathVariable UUID id) {
+        return requestService.get(userId, id);
     }
 
     @GetMapping
     public PagedResponse<RequestResponse> search(
+            @AuthenticationPrincipal UUID userId,
             @RequestParam(required = false) String originCity,
             @RequestParam(required = false) String destCity,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) Integer minSeats,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return requestService.search(originCity, destCity, date, minSeats, page, Math.min(Math.max(size, 1), 100));
+        return requestService.search(userId, originCity, destCity, date, minSeats, page, Math.min(Math.max(size, 1), 100));
     }
 }
