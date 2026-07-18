@@ -37,6 +37,8 @@ cd android
 ./gradlew assembleDebug       # Windows: .\gradlew.bat assembleDebug
 ```
 
+Requires JDK 21+ (also builds fine on JDK 25). If Gradle selects the wrong JVM (e.g. a JRE without `jlink`), pin the toolchain by setting `org.gradle.java.home` in your user `~/.gradle/gradle.properties` — this stays out of the repo so the project remains portable.
+
 To run in an emulator:
 
 1. Keep the backend running on port 8080.
