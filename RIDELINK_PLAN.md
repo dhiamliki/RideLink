@@ -124,7 +124,7 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 - [x] WebSocket/STOMP chat between matched users (text); message persistence *(backend, 4a)*
 - [ ] Read receipts + typing indicator + online presence
 - [ ] Push notifications via FCM (new request, accepted, new message, reminder)
-- [ ] Android: chat screen, notification handling
+- [x] Android: chat screen (WebSocket/STOMP client) *(4b — notification handling deferred to FCM task)*
 
 ---
 
@@ -155,6 +155,31 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 ---
 
 ## Working log (append newest at top)
+
+- 2026-07-18 — Phase 4 Android real-time chat screen (4b, WebSocket/STOMP client). Added Krossbow
+  (`org.hildan.krossbow` 9.3.0) STOMP over an OkHttp WebSocket transport that reuses the app's shared
+  OkHttpClient. `ChatClient` (Hilt singleton) connects to `ws://10.0.2.2:8080/ws` with the stored JWT
+  sent as the STOMP CONNECT `Authorization` header, exposes incoming messages on a topic as a Flow that
+  reconnects with backoff on a transient drop (Connecting/Connected/Reconnecting/Disconnected state),
+  sends messages + read receipts, and is torn down on chat close (no leaked sockets). New MVVM screens:
+  a **Conversations** list (from Profile → Messages) with counterpart name/photo, last-message preview
+  and an unread badge; a **Chat** screen that loads paged history, styles my/their bubbles (brand indigo
+  for mine) with local timestamps, sends over STOMP, appends incoming live, marks read on open, and
+  handles empty ("Say hello")/loading/connection states. **Entry points:** a "Message" button on an
+  ACCEPTED booking (My bookings) and ACCEPTED proposal (My proposals) calls from-booking/from-proposal
+  (get-or-create) then opens the chat. Chat REST models verified against the running backend (dev):
+  conversation id is `id`, counterpart `{id,displayName?,photoUrl?}`, paged messages
+  `{content:[{id,senderId,content,sentAt,readAt?}],page,size,totalElements,totalPages}`.
+  `./gradlew assembleDebug` BUILD SUCCESSFUL on the pinned JDK. No FCM/push, no typing indicators, no
+  backend changes.
+
+  TWO-EMULATOR manual test (both signed in against the same dev backend on host :8080, with an ACCEPTED
+  booking between A and B — A booked B's offer, B accepted): (1) emulator2 = user B → Profile → Messages
+  → open the conversation (chat screen stays open). (2) emulator1 = user A → Profile → My bookings →
+  the ACCEPTED booking → **Message** → type and send. (3) The message appears on B's open chat LIVE
+  (no refresh). (4) B replies → appears live on A. (5) Reopen either chat → history persists (GET
+  messages). (6) With B's chat closed, A sends → B's Profile → Messages shows an unread badge on the
+  conversation row; opening it clears the badge.
 
 - 2026-07-18 — Phase 4 real-time chat backend (4a, Flyway V7 `conversation`/`message`): new
   `com.ridelink.chat` package. Spring WebSocket + STOMP over SockJS at `/ws`; the STOMP CONNECT frame

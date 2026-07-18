@@ -7,10 +7,14 @@ import com.ridelink.app.data.remote.ApiService
 import com.ridelink.app.data.remote.CreateBlockBody
 import com.ridelink.app.data.remote.CreateReportBody
 import com.ridelink.app.data.remote.Proposal
+import com.ridelink.app.ui.chat.ChatTarget
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
@@ -33,8 +37,30 @@ class MyProposalsViewModel @Inject constructor(
     private val _working = MutableStateFlow<String?>(null)
     val working: StateFlow<String?> = _working.asStateFlow()
 
+    // The id of the proposal whose chat is being opened (get-or-create in flight).
+    private val _opening = MutableStateFlow<String?>(null)
+    val opening: StateFlow<String?> = _opening.asStateFlow()
+
+    // One-shot: emitted once the conversation exists, so the screen can navigate to the chat.
+    private val _openChat = MutableSharedFlow<ChatTarget>(extraBufferCapacity = 1)
+    val openChat: SharedFlow<ChatTarget> = _openChat.asSharedFlow()
+
     init {
         load()
+    }
+
+    fun message(proposal: Proposal) {
+        _opening.value = proposal.id
+        viewModelScope.launch {
+            try {
+                val conversation = api.conversationFromProposal(proposal.id)
+                _openChat.emit(ChatTarget(conversation.id, proposal.contact?.displayName ?: "Passenger"))
+            } catch (_: Exception) {
+                // Stay on the list; the button re-enables so the user can retry.
+            } finally {
+                _opening.value = null
+            }
+        }
     }
 
     fun load() {

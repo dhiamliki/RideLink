@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -35,6 +36,7 @@ import com.ridelink.app.ui.common.EmptyState
 import com.ridelink.app.ui.common.formatDateTime
 import com.ridelink.app.ui.common.ErrorState
 import com.ridelink.app.ui.common.LoadingState
+import com.ridelink.app.ui.common.PrimaryButton
 import com.ridelink.app.ui.common.SecondaryButton
 import com.ridelink.app.ui.common.StatusPill
 
@@ -42,10 +44,16 @@ import com.ridelink.app.ui.common.StatusPill
 @Composable
 fun MyBookingsScreen(
     onBack: () -> Unit,
+    onOpenChat: (conversationId: String, counterpartName: String) -> Unit,
     viewModel: MyBookingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val cancelling by viewModel.cancelling.collectAsState()
+    val opening by viewModel.opening.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.openChat.collect { onOpenChat(it.conversationId, it.name) }
+    }
 
     Scaffold(
         topBar = {
@@ -77,7 +85,7 @@ fun MyBookingsScreen(
                             verticalArrangement = Arrangement.spacedBy(Dimens.md),
                         ) {
                             items(state.bookings, key = { it.id }) {
-                                BookingCard(it, cancelling == it.id, viewModel::cancel)
+                                BookingCard(it, cancelling == it.id, opening == it.id, viewModel::cancel, viewModel::message)
                             }
                         }
                     }
@@ -87,7 +95,13 @@ fun MyBookingsScreen(
 }
 
 @Composable
-private fun BookingCard(booking: BookingSummary, cancelling: Boolean, onCancel: (String) -> Unit) {
+private fun BookingCard(
+    booking: BookingSummary,
+    cancelling: Boolean,
+    opening: Boolean,
+    onCancel: (String) -> Unit,
+    onMessage: (BookingSummary) -> Unit,
+) {
     val route = booking.offer?.let { "${it.origin?.cityName ?: "?"}  →  ${it.destination?.cityName ?: "?"}" }
     val status = booking.status.uppercase()
     AppCard {
@@ -104,6 +118,7 @@ private fun BookingCard(booking: BookingSummary, cancelling: Boolean, onCancel: 
 
         if (status == "ACCEPTED") {
             ContactCard(booking.counterpartContact?.displayName, booking.counterpartContact?.phoneNumber)
+            PrimaryButton(if (opening) "Opening…" else "Message", onClick = { onMessage(booking) }, enabled = !opening)
         }
 
         if (status == "REQUESTED" || status == "ACCEPTED") {

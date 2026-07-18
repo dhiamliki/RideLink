@@ -125,4 +125,22 @@ interface ApiService {
 
     @GET("api/blocks")
     suspend fun blockedUsers(): List<BlockedUser>
+
+    // --- Chat (Task 4b) ---
+
+    @GET("api/conversations")
+    suspend fun conversations(): List<Conversation>
+
+    @GET("api/conversations/{id}/messages")
+    suspend fun conversationMessages(
+        @Path("id") id: String,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 50,
+    ): PagedMessages
+
+    @POST("api/conversations/from-booking/{bookingId}")
+    suspend fun conversationFromBooking(@Path("bookingId") bookingId: String): Conversation
+
+    @POST("api/conversations/from-proposal/{proposalId}")
+    suspend fun conversationFromProposal(@Path("proposalId") proposalId: String): Conversation
 }

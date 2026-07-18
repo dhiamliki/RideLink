@@ -1,7 +1,9 @@
 package com.ridelink.app.ui.common
 
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -40,3 +42,13 @@ fun formatDateTime(date: String?, time: String?): String =
     listOfNotNull(formatRideDate(date), formatRideTime(time))
         .filter { it.isNotBlank() }
         .joinToString(" · ")
+
+// An ISO-8601 instant (e.g. a message's sentAt "2026-07-18T14:37:07Z") -> local "14:37".
+fun formatTimestamp(raw: String?): String {
+    if (raw.isNullOrBlank()) return ""
+    return try {
+        Instant.parse(raw.trim()).atZone(ZoneId.systemDefault()).format(TIME_HHMM)
+    } catch (e: Exception) {
+        ""
+    }
+}

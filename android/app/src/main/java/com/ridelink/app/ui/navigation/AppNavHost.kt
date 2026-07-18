@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import android.net.Uri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavType
@@ -15,6 +16,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.ridelink.app.ui.blocked.BlockedUsersScreen
 import com.ridelink.app.ui.bookings.MyBookingsScreen
+import com.ridelink.app.ui.chat.ChatScreen
+import com.ridelink.app.ui.chat.ConversationsScreen
 import com.ridelink.app.ui.bookings.OfferRequestsScreen
 import com.ridelink.app.ui.create.CreateOfferScreen
 import com.ridelink.app.ui.create.CreateRequestScreen
@@ -47,11 +50,14 @@ object Routes {
     const val REQUEST_PROPOSALS = "request/{requestId}/proposals"
     const val MY_PROPOSALS = "myProposals"
     const val BLOCKED_USERS = "blockedUsers"
+    const val CONVERSATIONS = "conversations"
+    const val CHAT = "chat/{conversationId}?name={name}"
 
     fun rideDetail(offerId: String) = "offer/$offerId"
     fun offerRequests(offerId: String) = "offer/$offerId/requests"
     fun requestDetail(requestId: String) = "request/$requestId"
     fun requestProposals(requestId: String) = "request/$requestId/proposals"
+    fun chat(conversationId: String, name: String) = "chat/$conversationId?name=${Uri.encode(name)}"
 
     // phoneNumber is placed raw in the path segment; a literal '+' is valid there and is not
     // decoded to a space (that only happens in query strings).
@@ -130,6 +136,7 @@ fun AppNavHost(rootViewModel: RootViewModel = hiltViewModel()) {
                 onOpenRequest = { navController.navigate(Routes.requestDetail(it)) },
                 onOpenMyBookings = { navController.navigate(Routes.MY_BOOKINGS) },
                 onOpenMyProposals = { navController.navigate(Routes.MY_PROPOSALS) },
+                onOpenConversations = { navController.navigate(Routes.CONVERSATIONS) },
                 onOpenBlockedUsers = { navController.navigate(Routes.BLOCKED_USERS) },
                 onLoggedOut = {
                     navController.navigate(Routes.PHONE) {
@@ -185,7 +192,10 @@ fun AppNavHost(rootViewModel: RootViewModel = hiltViewModel()) {
         }
 
         composable(Routes.MY_BOOKINGS) {
-            MyBookingsScreen(onBack = { navController.popBackStack() })
+            MyBookingsScreen(
+                onBack = { navController.popBackStack() },
+                onOpenChat = { id, name -> navController.navigate(Routes.chat(id, name)) },
+            )
         }
 
         composable(
@@ -206,11 +216,36 @@ fun AppNavHost(rootViewModel: RootViewModel = hiltViewModel()) {
         }
 
         composable(Routes.MY_PROPOSALS) {
-            MyProposalsScreen(onBack = { navController.popBackStack() })
+            MyProposalsScreen(
+                onBack = { navController.popBackStack() },
+                onOpenChat = { id, name -> navController.navigate(Routes.chat(id, name)) },
+            )
         }
 
         composable(Routes.BLOCKED_USERS) {
             BlockedUsersScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(Routes.CONVERSATIONS) {
+            ConversationsScreen(
+                onBack = { navController.popBackStack() },
+                onOpenChat = { id, name -> navController.navigate(Routes.chat(id, name)) },
+            )
+        }
+
+        composable(
+            route = Routes.CHAT,
+            arguments = listOf(
+                navArgument("conversationId") { type = NavType.StringType },
+                navArgument("name") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+            ),
+        ) { backStackEntry ->
+            val name = backStackEntry.arguments?.getString("name") ?: "Chat"
+            ChatScreen(counterpartName = name, onBack = { navController.popBackStack() })
         }
     }
 }

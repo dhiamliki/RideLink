@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -35,6 +36,7 @@ import com.ridelink.app.ui.common.EmptyState
 import com.ridelink.app.ui.common.ErrorState
 import com.ridelink.app.ui.common.formatRideDate
 import com.ridelink.app.ui.common.LoadingState
+import com.ridelink.app.ui.common.PrimaryButton
 import com.ridelink.app.ui.common.SafetyMenu
 import com.ridelink.app.ui.common.SecondaryButton
 import com.ridelink.app.ui.common.StatusPill
@@ -43,10 +45,16 @@ import com.ridelink.app.ui.common.StatusPill
 @Composable
 fun MyProposalsScreen(
     onBack: () -> Unit,
+    onOpenChat: (conversationId: String, counterpartName: String) -> Unit,
     viewModel: MyProposalsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val working by viewModel.working.collectAsState()
+    val opening by viewModel.opening.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.openChat.collect { onOpenChat(it.conversationId, it.name) }
+    }
 
     Scaffold(
         topBar = {
@@ -78,8 +86,8 @@ fun MyProposalsScreen(
                             verticalArrangement = Arrangement.spacedBy(Dimens.md),
                         ) {
                             items(state.proposals, key = { it.id }) {
-                                ProposalCard(it, working == it.id, viewModel::withdraw,
-                                    viewModel::report, viewModel::block)
+                                ProposalCard(it, working == it.id, opening == it.id, viewModel::withdraw,
+                                    viewModel::report, viewModel::block, viewModel::message)
                             }
                         }
                     }
@@ -92,9 +100,11 @@ fun MyProposalsScreen(
 private fun ProposalCard(
     proposal: Proposal,
     working: Boolean,
+    opening: Boolean,
     onWithdraw: (String) -> Unit,
     onReport: (String, String, String?) -> Unit,
     onBlock: (String) -> Unit,
+    onMessage: (Proposal) -> Unit,
 ) {
     val status = proposal.status.uppercase()
     val route = proposal.request?.let { "${it.originCity ?: "?"}  →  ${it.destCity ?: "?"}" }
@@ -127,6 +137,7 @@ private fun ProposalCard(
 
         if (status == "ACCEPTED") {
             ContactCard(proposal.contact?.displayName, proposal.contact?.phoneNumber)
+            PrimaryButton(if (opening) "Opening…" else "Message", onClick = { onMessage(proposal) }, enabled = !opening)
         }
 
         if (status == "PROPOSED") {

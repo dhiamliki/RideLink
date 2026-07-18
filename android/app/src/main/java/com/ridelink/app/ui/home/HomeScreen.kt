@@ -31,6 +31,7 @@ fun HomeScreen(
     onLoggedOut: () -> Unit,
     onOpenMyBookings: () -> Unit,
     onOpenMyProposals: () -> Unit,
+    onOpenConversations: () -> Unit,
     onOpenBlockedUsers: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -78,6 +79,7 @@ fun HomeScreen(
         }
 
         SectionHeader("Activity")
+        PrimaryButton("Messages", onClick = onOpenConversations)
         PrimaryButton("My bookings", onClick = onOpenMyBookings)
         PrimaryButton("My proposals", onClick = onOpenMyProposals)
 

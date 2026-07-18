@@ -36,6 +36,7 @@ fun MainScreen(
     onOpenRequest: (String) -> Unit,
     onOpenMyBookings: () -> Unit,
     onOpenMyProposals: () -> Unit,
+    onOpenConversations: () -> Unit,
     onOpenBlockedUsers: () -> Unit,
     onLoggedOut: () -> Unit,
 ) {
@@ -83,6 +84,7 @@ fun MainScreen(
                     onLoggedOut = onLoggedOut,
                     onOpenMyBookings = onOpenMyBookings,
                     onOpenMyProposals = onOpenMyProposals,
+                    onOpenConversations = onOpenConversations,
                     onOpenBlockedUsers = onOpenBlockedUsers,
                 )
             }
