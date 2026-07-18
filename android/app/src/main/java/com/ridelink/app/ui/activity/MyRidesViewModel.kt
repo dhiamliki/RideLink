@@ -22,9 +22,8 @@ sealed interface MyRidesUiState {
     data class Error(val message: String) : MyRidesUiState
 }
 
-// NOTE: the backend exposes no "my offers"/"my requests" endpoint, so — per the task's "use the
-// closest available, don't invent backend" — this reads the public feeds and keeps only rows whose
-// poster is the current user. Pending counts come from the existing per-offer bookings endpoint.
+// Sourced from GET /api/offers/mine and /api/requests/mine: the user's OWN listings across every
+// status (incl. full/cancelled/completed), with pending counts embedded — no per-row extra calls.
 @HiltViewModel
 class MyRidesViewModel @Inject constructor(
     private val api: ApiService,
@@ -54,15 +53,9 @@ class MyRidesViewModel @Inject constructor(
     private fun fetch() {
         viewModelScope.launch {
             try {
-                val myId = api.me().id
-                val offers = api.offers(size = 100).content.filter { it.driver?.id != null && it.driver.id == myId }
-                val requests = api.requests(size = 100).content.filter { it.passenger?.id != null && it.passenger.id == myId }
-                val rides = offers.map { offer ->
-                    val pending = runCatching {
-                        api.offerBookings(offer.id).count { it.status.uppercase() == "REQUESTED" }
-                    }.getOrDefault(0)
-                    PostedRide(offer, pending)
-                }
+                val offers = api.myOffers().content
+                val requests = api.myRequests().content
+                val rides = offers.map { PostedRide(it, it.pendingRequestCount) }
                 _uiState.value = MyRidesUiState.Success(rides, requests)
             } catch (e: Exception) {
                 _uiState.value = MyRidesUiState.Error("Could not load your posted rides.")

@@ -16,6 +16,13 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     boolean existsByOfferIdAndPassengerIdAndStatusIn(UUID offerId, UUID passengerId,
                                                      Collection<BookingStatus> statuses);
 
+    // [offerId, count] of still-pending (REQUESTED) bookings per offer, for the owner's My Rides badge.
+    // One grouped query over a page of offers instead of N per-offer calls.
+    @Query("select b.offerId, count(b) from Booking b "
+            + "where b.offerId in :offerIds and b.status = com.ridelink.booking.BookingStatus.REQUESTED "
+            + "group by b.offerId")
+    List<Object[]> countPendingByOfferIds(@Param("offerIds") Collection<UUID> offerIds);
+
     // Bookings in the given status linking the two users as passenger<->driver (either direction).
     // Used to auto-decline pending bookings when a block is created (see safety.SafetyService).
     @Query("select b from Booking b, RideOffer o where b.offerId = o.id and b.status = :status "

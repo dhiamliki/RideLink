@@ -35,6 +35,8 @@ import com.ridelink.app.ui.common.Dimens
 import com.ridelink.app.ui.common.ErrorState
 import com.ridelink.app.ui.common.SectionHeader
 import com.ridelink.app.ui.common.SegmentedToggle
+import com.ridelink.app.ui.common.Tag
+import com.ridelink.app.ui.common.Tone
 import com.ridelink.app.ui.common.formatDateTime
 import com.ridelink.app.ui.proposals.MyProposalCard
 import com.ridelink.app.ui.proposals.MyProposalsUiState
@@ -114,11 +116,14 @@ private fun PostedRideCard(ride: PostedRide, onOpen: (String) -> Unit) {
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            if (ride.pendingCount > 0) {
-                Badge(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ) { Text("${ride.pendingCount}") }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Dimens.sm)) {
+                offerStatusTag(o.status, o.availableSeats)?.let { (label, tone) -> Tag(label, tone) }
+                if (ride.pendingCount > 0) {
+                    Badge(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ) { Text("${ride.pendingCount}") }
+                }
             }
         }
         Text(formatDateTime(o.departureDate, o.departureTime), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -129,17 +134,48 @@ private fun PostedRideCard(ride: PostedRide, onOpen: (String) -> Unit) {
     }
 }
 
+// Owner-facing status chip for one of my offers: Cancelled/Completed by status, else Full/Active by seats.
+private fun offerStatusTag(status: String?, availableSeats: Int): Pair<String, Tone>? = when (status?.uppercase()) {
+    "CANCELLED" -> "Cancelled" to Tone.Danger
+    "COMPLETED" -> "Completed" to Tone.Neutral
+    "ACTIVE" -> if (availableSeats <= 0) "Full" to Tone.Warning else "Active" to Tone.Success
+    else -> null
+}
+
+// Owner-facing status chip for one of my requests.
+private fun requestStatusTag(status: String?): Pair<String, Tone>? = when (status?.uppercase()) {
+    "CANCELLED" -> "Cancelled" to Tone.Danger
+    "FULFILLED" -> "Fulfilled" to Tone.Neutral
+    "ACTIVE" -> "Active" to Tone.Success
+    else -> null
+}
+
 @Composable
 private fun PostedRequestCard(request: RequestItem, onOpen: (String) -> Unit) {
     AppCard(onClick = { onOpen(request.id) }) {
-        Text(
-            "${request.origin.cityName}  →  ${request.destination.cityName}",
-            style = MaterialTheme.typography.titleMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "${request.origin.cityName}  →  ${request.destination.cityName}",
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Dimens.sm)) {
+                requestStatusTag(request.status)?.let { (label, tone) -> Tag(label, tone) }
+                if (request.pendingProposalCount > 0) {
+                    Badge(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ) { Text("${request.pendingProposalCount}") }
+                }
+            }
+        }
         Text(formatDateTime(request.preferredDate, request.preferredTimeWindow), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text("${request.seatsNeeded} seat(s) needed — tap to see proposals", style = MaterialTheme.typography.bodyMedium)
+        Text(
+            if (request.pendingProposalCount > 0) "${request.pendingProposalCount} proposal(s) awaiting your response" else "${request.seatsNeeded} seat(s) needed — tap to see proposals",
+            style = MaterialTheme.typography.bodyMedium,
+        )
     }
 }
 

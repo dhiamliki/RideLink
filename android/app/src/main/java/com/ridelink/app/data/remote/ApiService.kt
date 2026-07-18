@@ -54,6 +54,22 @@ interface ApiService {
         @Query("size") size: Int = 20,
     ): PagedResponse<RequestItem>
 
+    // The authenticated user's own offers — ALL statuses/seat states, newest first, each with a
+    // pendingRequestCount. Not the browse feed (no filtering).
+    @GET("api/offers/mine")
+    suspend fun myOffers(
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 100,
+    ): PagedResponse<OfferItem>
+
+    // The authenticated user's own ride requests — ALL statuses, newest first, each with a
+    // pendingProposalCount.
+    @GET("api/requests/mine")
+    suspend fun myRequests(
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 100,
+    ): PagedResponse<RequestItem>
+
     @POST("api/offers")
     suspend fun createOffer(@Body body: CreateOfferBody): OfferItem
 

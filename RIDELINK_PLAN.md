@@ -156,6 +156,23 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 
 ## Working log (append newest at top)
 
+- 2026-07-19 — Owner "my listings" endpoints + My Rides data-source fix. BACKEND: new
+  `GET /api/offers/mine` and `GET /api/requests/mine` (auth required via `anyRequest().authenticated()`;
+  each returns ONLY the caller's own rows). Unlike the browse feed these apply NO filtering — every
+  status (ACTIVE/CANCELLED/COMPLETED, and ACTIVE/CANCELLED/FULFILLED for requests) and full
+  (availableSeats == 0) listings are included, newest first (reusing the existing
+  `findBy{Driver,Passenger}IdOrderByCreatedAtDesc` repo queries, paginated via `PagedResponse.of`). New
+  DTOs `MyOfferResponse`/`MyRequestResponse` embed a `pendingRequestCount` / `pendingProposalCount` so the
+  client shows the badge with no extra calls — counts come from one grouped query per page
+  (`countPendingByOfferIds` = REQUESTED bookings, `countPendingByRequestIds` = PROPOSED proposals). `/mine`
+  is declared before `/{id}` so path routing is unambiguous. No change to the public browse endpoints or
+  booking/proposal/chat/safety logic. ANDROID: `MyRidesViewModel` now calls `myOffers()`/`myRequests()`
+  instead of filtering the public feed by user id — so the user's FULL and CANCELLED listings appear;
+  badges use the embedded counts (dropped the per-offer bookings calls and the `me()` lookup). Added a
+  small owner status chip (Active/Full/Cancelled/Completed · Active/Fulfilled) on each My Rides row.
+  `./mvnw compile` clean; `./gradlew assembleDebug` BUILD SUCCESSFUL on the pinned JDK. Live DB round-trip
+  (create/cancel/full → GET /mine) not run here — Docker/Postgres unavailable in this environment.
+
 - 2026-07-19 — UX pass (Android, navigation + wiring only — no API/backend changes): restructured the
   app into **4 bottom-nav tabs**. **Explore** folds the old Home(offers) + Requests tabs into one screen
   with an Offers|Requests segmented toggle (search/filters + Post FAB kept). **Activity** is a new hub

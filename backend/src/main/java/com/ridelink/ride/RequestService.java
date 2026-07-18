@@ -1,5 +1,7 @@
 package com.ridelink.ride;
 
+import com.ridelink.proposal.RequestProposalRepository;
+import com.ridelink.ride.dto.MyRequestResponse;
 import com.ridelink.ride.dto.PagedResponse;
 import com.ridelink.ride.dto.RequestForm;
 import com.ridelink.ride.dto.RequestResponse;
@@ -14,6 +16,7 @@ import jakarta.persistence.criteria.Predicate;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,13 +35,16 @@ public class RequestService {
     private final UserRepository userRepository;
     private final MatchingStrategy matchingStrategy;
     private final SafetyService safetyService;
+    private final RequestProposalRepository proposalRepository;
 
     public RequestService(RideRequestRepository requestRepository, UserRepository userRepository,
-                          MatchingStrategy matchingStrategy, SafetyService safetyService) {
+                          MatchingStrategy matchingStrategy, SafetyService safetyService,
+                          RequestProposalRepository proposalRepository) {
         this.requestRepository = requestRepository;
         this.userRepository = userRepository;
         this.matchingStrategy = matchingStrategy;
         this.safetyService = safetyService;
+        this.proposalRepository = proposalRepository;
     }
 
     @Transactional
@@ -125,6 +131,31 @@ public class RequestService {
                 .toList();
 
         return PagedResponse.of(ranked, page, size);
+    }
+
+    // The owner's own listings: ALL of their requests regardless of status (no browse filtering),
+    // newest first, each carrying its count of still-pending proposals.
+    @Transactional(readOnly = true)
+    public PagedResponse<MyRequestResponse> mine(UUID passengerId, int page, int size) {
+        List<RideRequest> requests = requestRepository.findByPassengerIdOrderByCreatedAtDesc(passengerId);
+        Map<UUID, Long> pending = pendingCounts(requests);
+        UserSummary passenger = passengerSummary(passengerId);
+        List<MyRequestResponse> rows = requests.stream()
+                .map(r -> MyRequestResponse.of(r, passenger, pending.getOrDefault(r.getId(), 0L).intValue()))
+                .toList();
+        return PagedResponse.of(rows, page, size);
+    }
+
+    private Map<UUID, Long> pendingCounts(List<RideRequest> requests) {
+        if (requests.isEmpty()) {
+            return Map.of();
+        }
+        List<UUID> ids = requests.stream().map(RideRequest::getId).toList();
+        Map<UUID, Long> counts = new HashMap<>();
+        for (Object[] row : proposalRepository.countPendingByRequestIds(ids)) {
+            counts.put((UUID) row[0], (Long) row[1]);
+        }
+        return counts;
     }
 
     private MatchCandidate candidate(RideRequest r) {

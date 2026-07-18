@@ -34,6 +34,8 @@ data class OfferItem(
     val smokingAllowed: Boolean?,
     val petsAllowed: Boolean?,
     val matchScore: Int?,
+    // Only populated by GET /api/offers/mine (the owner's own view); 0 on browse payloads.
+    val pendingRequestCount: Int = 0,
 )
 
 data class RequestItem(
@@ -48,6 +50,8 @@ data class RequestItem(
     val maxPricePerSeat: Double?,
     val notes: String?,
     val matchScore: Int?,
+    // Only populated by GET /api/requests/mine (the owner's own view); 0 on browse payloads.
+    val pendingProposalCount: Int = 0,
 )
 
 // --- Booking (Task 2e) ---

@@ -1,5 +1,7 @@
 package com.ridelink.ride;
 
+import com.ridelink.booking.BookingRepository;
+import com.ridelink.ride.dto.MyOfferResponse;
 import com.ridelink.ride.dto.OfferForm;
 import com.ridelink.ride.dto.OfferResponse;
 import com.ridelink.ride.dto.PagedResponse;
@@ -15,6 +17,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,13 +36,16 @@ public class OfferService {
     private final UserRepository userRepository;
     private final MatchingStrategy matchingStrategy;
     private final SafetyService safetyService;
+    private final BookingRepository bookingRepository;
 
     public OfferService(RideOfferRepository offerRepository, UserRepository userRepository,
-                        MatchingStrategy matchingStrategy, SafetyService safetyService) {
+                        MatchingStrategy matchingStrategy, SafetyService safetyService,
+                        BookingRepository bookingRepository) {
         this.offerRepository = offerRepository;
         this.userRepository = userRepository;
         this.matchingStrategy = matchingStrategy;
         this.safetyService = safetyService;
+        this.bookingRepository = bookingRepository;
     }
 
     @Transactional
@@ -140,6 +146,31 @@ public class OfferService {
                 .toList();
 
         return PagedResponse.of(ranked, page, size);
+    }
+
+    // The owner's own listings: ALL of their offers regardless of status/seats (no browse filtering),
+    // newest first, each carrying its count of still-pending seat requests.
+    @Transactional(readOnly = true)
+    public PagedResponse<MyOfferResponse> mine(UUID driverId, int page, int size) {
+        List<RideOffer> offers = offerRepository.findByDriverIdOrderByCreatedAtDesc(driverId);
+        Map<UUID, Long> pending = pendingCounts(offers);
+        UserSummary driver = driverSummary(driverId);
+        List<MyOfferResponse> rows = offers.stream()
+                .map(o -> MyOfferResponse.of(o, driver, pending.getOrDefault(o.getId(), 0L).intValue()))
+                .toList();
+        return PagedResponse.of(rows, page, size);
+    }
+
+    private Map<UUID, Long> pendingCounts(List<RideOffer> offers) {
+        if (offers.isEmpty()) {
+            return Map.of();
+        }
+        List<UUID> ids = offers.stream().map(RideOffer::getId).toList();
+        Map<UUID, Long> counts = new HashMap<>();
+        for (Object[] row : bookingRepository.countPendingByOfferIds(ids)) {
+            counts.put((UUID) row[0], (Long) row[1]);
+        }
+        return counts;
     }
 
     private void applyEditableFields(RideOffer offer, OfferForm form) {

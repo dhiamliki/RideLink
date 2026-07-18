@@ -1,5 +1,6 @@
 package com.ridelink.ride;
 
+import com.ridelink.ride.dto.MyOfferResponse;
 import com.ridelink.ride.dto.OfferForm;
 import com.ridelink.ride.dto.OfferResponse;
 import com.ridelink.ride.dto.PagedResponse;
@@ -47,6 +48,14 @@ public class OfferController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancel(@AuthenticationPrincipal UUID userId, @PathVariable UUID id) {
         offerService.cancel(userId, id);
+    }
+
+    @GetMapping("/mine")
+    public PagedResponse<MyOfferResponse> mine(
+            @AuthenticationPrincipal UUID userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return offerService.mine(userId, page, Math.min(Math.max(size, 1), 100));
     }
 
     @GetMapping("/{id}")

@@ -1,5 +1,6 @@
 package com.ridelink.ride;
 
+import com.ridelink.ride.dto.MyRequestResponse;
 import com.ridelink.ride.dto.PagedResponse;
 import com.ridelink.ride.dto.RequestForm;
 import com.ridelink.ride.dto.RequestResponse;
@@ -46,6 +47,14 @@ public class RequestController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancel(@AuthenticationPrincipal UUID userId, @PathVariable UUID id) {
         requestService.cancel(userId, id);
+    }
+
+    @GetMapping("/mine")
+    public PagedResponse<MyRequestResponse> mine(
+            @AuthenticationPrincipal UUID userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return requestService.mine(userId, page, Math.min(Math.max(size, 1), 100));
     }
 
     @GetMapping("/{id}")
