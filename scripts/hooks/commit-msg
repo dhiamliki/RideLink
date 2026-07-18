@@ -1,0 +1,10 @@
+#!/bin/sh
+# commit-msg hook: strip AI co-author trailers and AI-tool signatures.
+# Never blocks a commit; only cleans the message.
+msg_file="$1"
+tmp="$msg_file.clean"
+
+grep -viE 'Co-authored-by:.*(claude|anthropic)|Generated with|🤖|Claude Code|claude\.ai/code|Anthropic' "$msg_file" > "$tmp"
+mv "$tmp" "$msg_file"
+
+exit 0

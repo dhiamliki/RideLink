@@ -46,3 +46,7 @@ To run in an emulator:
 3. CLI install alternative: `./gradlew installDebug`, then launch the RideLink app from the emulator.
 
 The Home screen calls `GET /api/health` through Retrofit using base URL `http://10.0.2.2:8080/` (the emulator's alias for the host's `localhost`) and shows the returned status. Cleartext HTTP is allowed only for `10.0.2.2`/`localhost` in dev.
+
+## Development
+
+Install the local commit-message hook: `cp scripts/hooks/commit-msg .git/hooks/ && chmod +x .git/hooks/commit-msg`
