@@ -156,6 +156,25 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 
 ## Working log (append newest at top)
 
+- 2026-07-19 — UX pass (Android, navigation + wiring only — no API/backend changes): restructured the
+  app into **4 bottom-nav tabs**. **Explore** folds the old Home(offers) + Requests tabs into one screen
+  with an Offers|Requests segmented toggle (search/filters + Post FAB kept). **Activity** is a new hub
+  with a Driver|Passenger segmented control — Driver shows *my posted rides* (each with a pending
+  request-count badge → offer/{id}/requests) and *my posted requests* (→ request/{id}/proposals);
+  Passenger shows my bookings + my proposals. NOTE: no backend "my offers"/"my requests" endpoint
+  exists, so MyRides reads the public feeds and filters to the current user's own posts (pending counts
+  from the existing per-offer bookings endpoint) — closest available, no backend invented. **Messages**
+  promotes the conversations list to a tab with an unread-count badge on the tab icon. **Profile** is now
+  account-only (profile card, Blocked users, Log out) — the old activity button-list moved to the
+  Activity tab. Messaging: added a **Message** action on the ACCEPTED card of both accept screens
+  (OfferRequests / RequestProposals) via the shared onOpenChat(conversationId, name) path; on a
+  successful accept a "Accepted — Message" snackbar surfaces the get-or-create conversation and the inline
+  Message button appears. Refresh: fixed the fake pull-to-refresh on MyBookings/MyProposals/OfferRequests/
+  RequestProposals (real refreshing StateFlow, Feed template), added refresh-on-return
+  (LaunchedEffect{load()}) to the accept/detail/activity lists, and propagated RefreshBus on
+  accept/decline/cancel/withdraw so counterpart browse lists invalidate. No live WebSocket push (separate
+  task), no maps/ratings/FCM. `./gradlew assembleDebug` BUILD SUCCESSFUL on the pinned JDK.
+
 - 2026-07-18 — Phase 4 Android real-time chat screen (4b, WebSocket/STOMP client). Added Krossbow
   (`org.hildan.krossbow` 9.3.0) STOMP over an OkHttp WebSocket transport that reuses the app's shared
   OkHttpClient. `ChatClient` (Hilt singleton) connects to `ws://10.0.2.2:8080/ws` with the stored JWT

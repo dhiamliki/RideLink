@@ -1,7 +1,6 @@
 package com.ridelink.app.ui.proposals
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,12 +15,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -44,10 +48,26 @@ import com.ridelink.app.ui.common.StatusPill
 @Composable
 fun RequestProposalsScreen(
     onBack: () -> Unit,
+    onOpenChat: (conversationId: String, counterpartName: String) -> Unit,
     viewModel: RequestProposalsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val working by viewModel.working.collectAsState()
+    val opening by viewModel.opening.collectAsState()
+    val refreshing by viewModel.refreshing.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Refresh on entry so the list is current when returning to this screen.
+    LaunchedEffect(Unit) { viewModel.load() }
+    LaunchedEffect(Unit) {
+        viewModel.openChat.collect { onOpenChat(it.conversationId, it.name) }
+    }
+    LaunchedEffect(Unit) {
+        viewModel.accepted.collect { target ->
+            val result = snackbarHostState.showSnackbar(message = "Accepted", actionLabel = "Message", withDismissAction = true)
+            if (result == SnackbarResult.ActionPerformed) onOpenChat(target.conversationId, target.name)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -60,10 +80,11 @@ fun RequestProposalsScreen(
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         PullToRefreshBox(
-            isRefreshing = false,
-            onRefresh = viewModel::load,
+            isRefreshing = refreshing,
+            onRefresh = viewModel::refresh,
             modifier = Modifier.fillMaxSize().padding(padding),
         ) {
             when (val state = uiState) {
@@ -79,8 +100,8 @@ fun RequestProposalsScreen(
                             verticalArrangement = Arrangement.spacedBy(Dimens.md),
                         ) {
                             items(state.proposals, key = { it.id }) {
-                                ProposalCard(it, working == it.id, viewModel::accept, viewModel::decline,
-                                    viewModel::report, viewModel::block)
+                                ProposalCard(it, working == it.id, opening == it.id, viewModel::accept,
+                                    viewModel::decline, viewModel::message, viewModel::report, viewModel::block)
                             }
                         }
                     }
@@ -93,8 +114,10 @@ fun RequestProposalsScreen(
 private fun ProposalCard(
     proposal: Proposal,
     working: Boolean,
-    onAccept: (String) -> Unit,
-    onDecline: (String) -> Unit,
+    opening: Boolean,
+    onAccept: (Proposal) -> Unit,
+    onDecline: (Proposal) -> Unit,
+    onMessage: (Proposal) -> Unit,
     onReport: (String, String, String?) -> Unit,
     onBlock: (String) -> Unit,
 ) {
@@ -129,12 +152,13 @@ private fun ProposalCard(
 
         if (status == "ACCEPTED") {
             ContactCard(proposal.contact?.displayName, proposal.contact?.phoneNumber)
+            PrimaryButton(if (opening) "Opening…" else "Message", onClick = { onMessage(proposal) }, enabled = !opening)
         }
 
         if (status == "PROPOSED") {
             Row(horizontalArrangement = Arrangement.spacedBy(Dimens.sm)) {
-                PrimaryButton("Accept", onClick = { onAccept(proposal.id) }, enabled = !working, modifier = Modifier.weight(1f))
-                SecondaryButton("Decline", onClick = { onDecline(proposal.id) }, enabled = !working, modifier = Modifier.weight(1f))
+                PrimaryButton("Accept", onClick = { onAccept(proposal) }, enabled = !working, modifier = Modifier.weight(1f))
+                SecondaryButton("Decline", onClick = { onDecline(proposal) }, enabled = !working, modifier = Modifier.weight(1f))
             }
         }
     }

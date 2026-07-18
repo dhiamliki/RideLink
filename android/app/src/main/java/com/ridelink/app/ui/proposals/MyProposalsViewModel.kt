@@ -33,6 +33,10 @@ class MyProposalsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<MyProposalsUiState>(MyProposalsUiState.Loading)
     val uiState: StateFlow<MyProposalsUiState> = _uiState.asStateFlow()
 
+    // Drives the pull-to-refresh spinner while a manual refresh is in flight.
+    private val _refreshing = MutableStateFlow(false)
+    val refreshing: StateFlow<Boolean> = _refreshing.asStateFlow()
+
     // The id of the proposal currently being withdrawn, so its button shows progress / disables.
     private val _working = MutableStateFlow<String?>(null)
     val working: StateFlow<String?> = _working.asStateFlow()
@@ -44,10 +48,6 @@ class MyProposalsViewModel @Inject constructor(
     // One-shot: emitted once the conversation exists, so the screen can navigate to the chat.
     private val _openChat = MutableSharedFlow<ChatTarget>(extraBufferCapacity = 1)
     val openChat: SharedFlow<ChatTarget> = _openChat.asSharedFlow()
-
-    init {
-        load()
-    }
 
     fun message(proposal: Proposal) {
         _opening.value = proposal.id
@@ -65,12 +65,22 @@ class MyProposalsViewModel @Inject constructor(
 
     fun load() {
         _uiState.value = MyProposalsUiState.Loading
+        fetch()
+    }
+
+    fun refresh() {
+        _refreshing.value = true
+        fetch()
+    }
+
+    private fun fetch() {
         viewModelScope.launch {
             _uiState.value = try {
                 MyProposalsUiState.Success(api.myProposals())
             } catch (e: Exception) {
                 MyProposalsUiState.Error("Could not load your proposals.")
             }
+            _refreshing.value = false
         }
     }
 
@@ -83,6 +93,8 @@ class MyProposalsViewModel @Inject constructor(
                 // Reloading reflects the true server state.
             } finally {
                 _working.value = null
+                // Invalidate the browse lists so the request owner's view updates on return.
+                refreshBus.refreshBrowse()
                 load()
             }
         }

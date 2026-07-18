@@ -47,6 +47,8 @@ fun RideDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    // Reload on entry so the ride (seats, requests) is current when returning to this screen.
+    LaunchedEffect(Unit) { viewModel.load() }
     // A completed block hides the driver's ride, so leave the now-stale detail screen.
     LaunchedEffect(Unit) { viewModel.blocked.collect { onBack() } }
 

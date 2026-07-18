@@ -15,16 +15,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.ridelink.app.ui.blocked.BlockedUsersScreen
-import com.ridelink.app.ui.bookings.MyBookingsScreen
 import com.ridelink.app.ui.chat.ChatScreen
-import com.ridelink.app.ui.chat.ConversationsScreen
 import com.ridelink.app.ui.bookings.OfferRequestsScreen
 import com.ridelink.app.ui.create.CreateOfferScreen
 import com.ridelink.app.ui.create.CreateRequestScreen
 import com.ridelink.app.ui.create.PostChooserScreen
 import com.ridelink.app.ui.detail.RideDetailScreen
 import com.ridelink.app.ui.main.MainScreen
-import com.ridelink.app.ui.proposals.MyProposalsScreen
 import com.ridelink.app.ui.proposals.RequestProposalsScreen
 import com.ridelink.app.ui.requestdetail.RequestDetailScreen
 import com.ridelink.app.ui.otp.OtpScreen
@@ -45,12 +42,9 @@ object Routes {
     const val CREATE_REQUEST = "createRequest"
     const val RIDE_DETAIL = "offer/{offerId}"
     const val OFFER_REQUESTS = "offer/{offerId}/requests"
-    const val MY_BOOKINGS = "myBookings"
     const val REQUEST_DETAIL = "request/{requestId}"
     const val REQUEST_PROPOSALS = "request/{requestId}/proposals"
-    const val MY_PROPOSALS = "myProposals"
     const val BLOCKED_USERS = "blockedUsers"
-    const val CONVERSATIONS = "conversations"
     const val CHAT = "chat/{conversationId}?name={name}"
 
     fun rideDetail(offerId: String) = "offer/$offerId"
@@ -72,6 +66,8 @@ fun AppNavHost(rootViewModel: RootViewModel = hiltViewModel()) {
     val navController = rememberNavController()
     // Which bottom-nav tab MainScreen shows; hoisted so create flows can steer it on return.
     var mainTab by rememberSaveable { mutableIntStateOf(0) }
+    // Which Explore sub-list (0 = offers, 1 = requests); hoisted so posting can steer it on return.
+    var exploreSegment by rememberSaveable { mutableIntStateOf(0) }
 
     // Forced logout (refresh failed): drop everything and return to phone login.
     LaunchedEffect(Unit) {
@@ -131,12 +127,14 @@ fun AppNavHost(rootViewModel: RootViewModel = hiltViewModel()) {
             MainScreen(
                 selectedTab = mainTab,
                 onSelectTab = { mainTab = it },
+                exploreSegment = exploreSegment,
+                onSelectExploreSegment = { exploreSegment = it },
                 onPost = { navController.navigate(Routes.POST_CHOOSER) },
                 onOpenOffer = { navController.navigate(Routes.rideDetail(it)) },
                 onOpenRequest = { navController.navigate(Routes.requestDetail(it)) },
-                onOpenMyBookings = { navController.navigate(Routes.MY_BOOKINGS) },
-                onOpenMyProposals = { navController.navigate(Routes.MY_PROPOSALS) },
-                onOpenConversations = { navController.navigate(Routes.CONVERSATIONS) },
+                onOpenOfferRequests = { navController.navigate(Routes.offerRequests(it)) },
+                onOpenRequestProposals = { navController.navigate(Routes.requestProposals(it)) },
+                onOpenChat = { id, name -> navController.navigate(Routes.chat(id, name)) },
                 onOpenBlockedUsers = { navController.navigate(Routes.BLOCKED_USERS) },
                 onLoggedOut = {
                     navController.navigate(Routes.PHONE) {
@@ -157,7 +155,8 @@ fun AppNavHost(rootViewModel: RootViewModel = hiltViewModel()) {
         composable(Routes.CREATE_OFFER) {
             CreateOfferScreen(
                 onDone = {
-                    mainTab = 0 // land on the feed, which reloads on entry
+                    mainTab = 0 // land on Explore…
+                    exploreSegment = 0 // …showing the offer feed, which reloads on entry
                     navController.popBackStack(Routes.MAIN, inclusive = false)
                 },
                 onBack = { navController.popBackStack() },
@@ -167,7 +166,8 @@ fun AppNavHost(rootViewModel: RootViewModel = hiltViewModel()) {
         composable(Routes.CREATE_REQUEST) {
             CreateRequestScreen(
                 onDone = {
-                    mainTab = 1 // land on the requests tab
+                    mainTab = 0 // land on Explore…
+                    exploreSegment = 1 // …showing the requests list
                     navController.popBackStack(Routes.MAIN, inclusive = false)
                 },
                 onBack = { navController.popBackStack() },
@@ -188,11 +188,7 @@ fun AppNavHost(rootViewModel: RootViewModel = hiltViewModel()) {
             route = Routes.OFFER_REQUESTS,
             arguments = listOf(navArgument("offerId") { type = NavType.StringType }),
         ) {
-            OfferRequestsScreen(onBack = { navController.popBackStack() })
-        }
-
-        composable(Routes.MY_BOOKINGS) {
-            MyBookingsScreen(
+            OfferRequestsScreen(
                 onBack = { navController.popBackStack() },
                 onOpenChat = { id, name -> navController.navigate(Routes.chat(id, name)) },
             )
@@ -212,11 +208,7 @@ fun AppNavHost(rootViewModel: RootViewModel = hiltViewModel()) {
             route = Routes.REQUEST_PROPOSALS,
             arguments = listOf(navArgument("requestId") { type = NavType.StringType }),
         ) {
-            RequestProposalsScreen(onBack = { navController.popBackStack() })
-        }
-
-        composable(Routes.MY_PROPOSALS) {
-            MyProposalsScreen(
+            RequestProposalsScreen(
                 onBack = { navController.popBackStack() },
                 onOpenChat = { id, name -> navController.navigate(Routes.chat(id, name)) },
             )
@@ -224,13 +216,6 @@ fun AppNavHost(rootViewModel: RootViewModel = hiltViewModel()) {
 
         composable(Routes.BLOCKED_USERS) {
             BlockedUsersScreen(onBack = { navController.popBackStack() })
-        }
-
-        composable(Routes.CONVERSATIONS) {
-            ConversationsScreen(
-                onBack = { navController.popBackStack() },
-                onOpenChat = { id, name -> navController.navigate(Routes.chat(id, name)) },
-            )
         }
 
         composable(

@@ -29,9 +29,6 @@ import com.ridelink.app.ui.common.SectionHeader
 @Composable
 fun HomeScreen(
     onLoggedOut: () -> Unit,
-    onOpenMyBookings: () -> Unit,
-    onOpenMyProposals: () -> Unit,
-    onOpenConversations: () -> Unit,
     onOpenBlockedUsers: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -77,11 +74,6 @@ fun HomeScreen(
                 SecondaryButton("Retry", onClick = viewModel::load)
             }
         }
-
-        SectionHeader("Activity")
-        PrimaryButton("Messages", onClick = onOpenConversations)
-        PrimaryButton("My bookings", onClick = onOpenMyBookings)
-        PrimaryButton("My proposals", onClick = onOpenMyProposals)
 
         SectionHeader("Account")
         SecondaryButton("Blocked users", onClick = onOpenBlockedUsers)

@@ -49,6 +49,8 @@ fun RequestDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    // Reload on entry so the request (proposals) is current when returning to this screen.
+    LaunchedEffect(Unit) { viewModel.load() }
     // A completed block hides this passenger's request, so leave the now-stale detail screen.
     LaunchedEffect(Unit) { viewModel.blocked.collect { onBack() } }
 

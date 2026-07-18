@@ -1,103 +1,27 @@
 package com.ridelink.app.ui.proposals
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.ridelink.app.data.remote.Proposal
 import com.ridelink.app.ui.common.AppCard
 import com.ridelink.app.ui.common.ContactCard
-import com.ridelink.app.ui.common.Dimens
-import com.ridelink.app.ui.common.EmptyState
-import com.ridelink.app.ui.common.ErrorState
 import com.ridelink.app.ui.common.formatRideDate
-import com.ridelink.app.ui.common.LoadingState
 import com.ridelink.app.ui.common.PrimaryButton
 import com.ridelink.app.ui.common.SafetyMenu
 import com.ridelink.app.ui.common.SecondaryButton
 import com.ridelink.app.ui.common.StatusPill
 
-@OptIn(ExperimentalMaterial3Api::class)
+// A single "my proposal" row (as a driver). Rendered by the Activity hub's Passenger section.
 @Composable
-fun MyProposalsScreen(
-    onBack: () -> Unit,
-    onOpenChat: (conversationId: String, counterpartName: String) -> Unit,
-    viewModel: MyProposalsViewModel = hiltViewModel(),
-) {
-    val uiState by viewModel.uiState.collectAsState()
-    val working by viewModel.working.collectAsState()
-    val opening by viewModel.opening.collectAsState()
-
-    LaunchedEffect(Unit) {
-        viewModel.openChat.collect { onOpenChat(it.conversationId, it.name) }
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("My proposals") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-            )
-        },
-    ) { padding ->
-        PullToRefreshBox(
-            isRefreshing = false,
-            onRefresh = viewModel::load,
-            modifier = Modifier.fillMaxSize().padding(padding),
-        ) {
-            when (val state = uiState) {
-                is MyProposalsUiState.Loading -> LoadingState()
-                is MyProposalsUiState.Error -> ErrorState(state.message, onRetry = viewModel::load)
-                is MyProposalsUiState.Success ->
-                    if (state.proposals.isEmpty()) {
-                        EmptyState("You haven't proposed on any requests yet")
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(horizontal = Dimens.screen, vertical = Dimens.lg),
-                            verticalArrangement = Arrangement.spacedBy(Dimens.md),
-                        ) {
-                            items(state.proposals, key = { it.id }) {
-                                ProposalCard(it, working == it.id, opening == it.id, viewModel::withdraw,
-                                    viewModel::report, viewModel::block, viewModel::message)
-                            }
-                        }
-                    }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ProposalCard(
+internal fun MyProposalCard(
     proposal: Proposal,
     working: Boolean,
     opening: Boolean,

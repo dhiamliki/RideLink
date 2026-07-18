@@ -56,10 +56,6 @@ class RideDetailViewModel @Inject constructor(
     private val _blocked = MutableSharedFlow<Unit>()
     val blocked: SharedFlow<Unit> = _blocked.asSharedFlow()
 
-    init {
-        load()
-    }
-
     fun report(userId: String, reason: String, detail: String?) {
         viewModelScope.launch {
             runCatching { api.reportUser(CreateReportBody(userId, reason, detail)) }
