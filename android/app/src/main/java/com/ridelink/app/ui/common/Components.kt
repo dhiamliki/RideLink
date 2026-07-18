@@ -60,6 +60,7 @@ object Dimens {
     val xl = 24.dp
     val xxl = 32.dp
     val screen = 20.dp // default screen edge padding
+    val fabClearance = 88.dp // bottom list padding so the FAB never covers the last item
 }
 
 // ---- Buttons ----

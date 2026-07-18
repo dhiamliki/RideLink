@@ -32,6 +32,7 @@ import com.ridelink.app.ui.common.AppCard
 import com.ridelink.app.ui.common.Avatar
 import com.ridelink.app.ui.common.Dimens
 import com.ridelink.app.ui.common.ErrorState
+import com.ridelink.app.ui.common.formatDateTime
 import com.ridelink.app.ui.common.LoadingState
 import com.ridelink.app.ui.common.PrimaryButton
 import com.ridelink.app.ui.common.SafetyMenu
@@ -120,7 +121,7 @@ private fun DetailContent(
         )
 
         AppCard {
-            InfoRow("Departure", "${offer.departureDate} · ${offer.departureTime}")
+            InfoRow("Departure", formatDateTime(offer.departureDate, offer.departureTime))
             InfoRow("Seats", "${offer.availableSeats} of ${offer.totalSeats} available")
             InfoRow("Price per seat", "${offer.pricePerSeat} DT")
             InfoRow("Smoking", if (offer.smokingAllowed == true) "Allowed" else "Not allowed")

@@ -31,6 +31,7 @@ import com.ridelink.app.ui.common.CityDropdown
 import com.ridelink.app.ui.common.DateField
 import com.ridelink.app.ui.common.Dimens
 import com.ridelink.app.ui.common.EmptyState
+import com.ridelink.app.ui.common.formatDateTime
 import com.ridelink.app.ui.common.ErrorState
 import com.ridelink.app.ui.common.LoadingState
 import com.ridelink.app.ui.common.PrimaryButton
@@ -75,14 +76,14 @@ fun FeedScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(horizontal = Dimens.screen, vertical = Dimens.lg),
+                            contentPadding = PaddingValues(start = Dimens.screen, end = Dimens.screen, top = Dimens.lg, bottom = Dimens.fabClearance),
                             verticalArrangement = Arrangement.spacedBy(Dimens.md),
                         ) {
                             items(state.offers, key = { it.id }) { offer ->
                                 RideCard(
                                     personName = offer.driver?.displayName ?: "Driver",
                                     route = "${offer.origin.cityName}  →  ${offer.destination.cityName}",
-                                    subtitle = "${offer.departureDate} · ${offer.departureTime}",
+                                    subtitle = formatDateTime(offer.departureDate, offer.departureTime),
                                     footerStart = "${offer.availableSeats} seat(s) left",
                                     footerEnd = "${offer.pricePerSeat} DT",
                                     matchScore = offer.matchScore,

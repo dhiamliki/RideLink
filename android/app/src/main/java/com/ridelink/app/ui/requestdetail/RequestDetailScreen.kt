@@ -35,6 +35,7 @@ import com.ridelink.app.ui.common.AppCard
 import com.ridelink.app.ui.common.Avatar
 import com.ridelink.app.ui.common.Dimens
 import com.ridelink.app.ui.common.ErrorState
+import com.ridelink.app.ui.common.formatDateTime
 import com.ridelink.app.ui.common.LoadingState
 import com.ridelink.app.ui.common.PrimaryButton
 import com.ridelink.app.ui.common.SafetyMenu
@@ -124,7 +125,7 @@ private fun DetailContent(
         )
 
         AppCard {
-            InfoRow("Preferred", "${request.preferredDate} · ${request.preferredTimeWindow}")
+            InfoRow("Preferred", formatDateTime(request.preferredDate, request.preferredTimeWindow))
             InfoRow("Seats needed", "${request.seatsNeeded}")
             InfoRow("Max price per seat", request.maxPricePerSeat?.let { "$it DT" } ?: "No budget set")
         }

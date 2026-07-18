@@ -33,6 +33,7 @@ import com.ridelink.app.ui.common.ContactCard
 import com.ridelink.app.ui.common.Dimens
 import com.ridelink.app.ui.common.EmptyState
 import com.ridelink.app.ui.common.ErrorState
+import com.ridelink.app.ui.common.formatRideDate
 import com.ridelink.app.ui.common.LoadingState
 import com.ridelink.app.ui.common.SafetyMenu
 import com.ridelink.app.ui.common.SecondaryButton
@@ -114,7 +115,7 @@ private fun ProposalCard(
                 }
             }
         }
-        proposal.request?.preferredDate?.let {
+        formatRideDate(proposal.request?.preferredDate)?.let {
             Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         proposal.message?.takeIf { it.isNotBlank() }?.let {

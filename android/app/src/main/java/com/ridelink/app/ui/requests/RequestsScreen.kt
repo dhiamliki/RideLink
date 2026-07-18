@@ -25,6 +25,7 @@ import com.ridelink.app.ui.common.DateField
 import com.ridelink.app.ui.common.Dimens
 import com.ridelink.app.ui.common.EmptyState
 import com.ridelink.app.ui.common.ErrorState
+import com.ridelink.app.ui.common.formatDateTime
 import com.ridelink.app.ui.common.LoadingState
 import com.ridelink.app.ui.common.PrimaryButton
 import com.ridelink.app.ui.common.RideCard
@@ -71,14 +72,14 @@ fun RequestsScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(horizontal = Dimens.screen, vertical = Dimens.lg),
+                            contentPadding = PaddingValues(start = Dimens.screen, end = Dimens.screen, top = Dimens.lg, bottom = Dimens.fabClearance),
                             verticalArrangement = Arrangement.spacedBy(Dimens.md),
                         ) {
                             items(state.requests, key = { it.id }) { request ->
                                 RideCard(
                                     personName = request.passenger?.displayName ?: "Passenger",
                                     route = "${request.origin.cityName}  →  ${request.destination.cityName}",
-                                    subtitle = "${request.preferredDate} · ${request.preferredTimeWindow}",
+                                    subtitle = formatDateTime(request.preferredDate, request.preferredTimeWindow),
                                     footerStart = "${request.seatsNeeded} seat(s) needed",
                                     footerEnd = request.maxPricePerSeat?.let { "up to $it DT" },
                                     matchScore = request.matchScore,

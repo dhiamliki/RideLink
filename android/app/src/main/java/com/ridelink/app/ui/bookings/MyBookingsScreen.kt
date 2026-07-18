@@ -32,6 +32,7 @@ import com.ridelink.app.ui.common.AppCard
 import com.ridelink.app.ui.common.ContactCard
 import com.ridelink.app.ui.common.Dimens
 import com.ridelink.app.ui.common.EmptyState
+import com.ridelink.app.ui.common.formatDateTime
 import com.ridelink.app.ui.common.ErrorState
 import com.ridelink.app.ui.common.LoadingState
 import com.ridelink.app.ui.common.SecondaryButton
@@ -96,7 +97,7 @@ private fun BookingCard(booking: BookingSummary, cancelling: Boolean, onCancel: 
         }
         booking.offer?.let { o ->
             if (o.departureDate != null) {
-                Text("${o.departureDate} · ${o.departureTime ?: ""}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(formatDateTime(o.departureDate, o.departureTime), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         Text("${booking.seatsBooked} seat(s)", style = MaterialTheme.typography.bodyMedium)
