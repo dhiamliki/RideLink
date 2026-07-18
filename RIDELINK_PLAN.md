@@ -121,7 +121,7 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 
 ## Phase 4 — Real-time chat + notifications
 
-- [ ] WebSocket/STOMP chat between matched users (text); message persistence
+- [x] WebSocket/STOMP chat between matched users (text); message persistence *(backend, 4a)*
 - [ ] Read receipts + typing indicator + online presence
 - [ ] Push notifications via FCM (new request, accepted, new message, reminder)
 - [ ] Android: chat screen, notification handling
@@ -155,6 +155,26 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 ---
 
 ## Working log (append newest at top)
+
+- 2026-07-18 — Phase 4 real-time chat backend (4a, Flyway V7 `conversation`/`message`): new
+  `com.ridelink.chat` package. Spring WebSocket + STOMP over SockJS at `/ws`; the STOMP CONNECT frame
+  is JWT-authenticated (`StompAuthChannelInterceptor` reuses `JwtService`, binds userId as the session
+  Principal; invalid/missing token → connection rejected). A `Conversation` is the single thread between
+  two users (stable sorted `pair_key`, unique), linked to the accepted `booking_id` OR `proposal_id`;
+  `Message` has content + `read_at` (nullable, doubles as read flag) with index (conversation_id,
+  sent_at). Eligibility gate in `ChatService` (accepted booking/proposal connecting the pair AND not
+  blocked via `SafetyService`) enforced on get-or-create AND every send/read. REST: GET
+  /api/conversations (counterpart + last message + unread count), GET /api/conversations/{id}/messages
+  (paged; 403 non-participant), POST /api/conversations/from-booking/{id} + /from-proposal/{id}
+  (get-or-create, verifies acceptance + ownership). STOMP: `/app/chat.send` persists + broadcasts to
+  `/topic/conversations/{id}`; `/app/chat.read` marks read + broadcasts a receipt to
+  `…/{id}/read`; errors returned to `/user/queue/errors`. Content validated (non-empty, ≤2000). Verified
+  with Postgres + dev: `./mvnw compile` clean, Flyway V7 applies (success), and a two-client STOMP test
+  — 20/20 checks: two users with an ACCEPTED booking connect with their JWTs, A↔B messages delivered
+  live, history persists (GET shows 2), unread count + read receipts work; a stranger with no accepted
+  connection gets 403 (create + read), an invalid token is rejected at CONNECT, and a blocked pair
+  cannot chat (create → 403, STOMP send not persisted + error frame, conversation hidden). No FCM/push,
+  no typing indicators, no Android — those are later.
 
 - 2026-07-17 — Styling pass (Android, visual only — no logic/nav/API changes): introduced a proper
   design system in the theme layer — refined indigo palette + neutral surfaces + semantic
