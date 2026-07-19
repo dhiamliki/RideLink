@@ -90,8 +90,7 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch { chatClient.markRead(conversationId) }
     }
 
-    override fun onCleared() {
-        // Screen closed: tear the socket down so we never leak a connection.
-        chatClient.disconnectAsync()
-    }
+    // No explicit teardown here: cancelling viewModelScope cancels the observeIncoming collector, which
+    // releases ChatClient's subscriber refcount and disconnects the shared session once no chat screen
+    // is left collecting. Tearing down from onCleared would race the next screen's connect/subscribe.
 }

@@ -156,6 +156,21 @@ Backend (Spring Boot + Postgres) + Android client (Kotlin/Compose). That's it fo
 
 ## Working log (append newest at top)
 
+- 2026-07-19 — Fix: restore live chat delivery (Android only, no backend/model changes). Root cause: the
+  singleton `ChatClient` coupled its whole connection lifecycle to a single `ChatViewModel.onCleared`,
+  which fire-and-forget `disconnectAsync()`'d the shared STOMP session. Untouched by the 4-tab
+  restructure, but that restructure made open→back→reopen chat routine (Conversations is now a tab), so a
+  departing screen's teardown raced/closed the very session the (re)entering screen had just SUBSCRIBEd
+  on — its subscription sat on a dead socket, so nothing arrived live until re-entry re-fetched via REST.
+  Fix: reference-count active `incoming()` collectors in `ChatClient` (connect on first subscriber via
+  `onStart`, disconnect only when the last leaves via `onCompletion`); reconnect path now drops+nulls the
+  session under the mutex and the flow restarts so it re-SUBSCRIBEs after a drop (Reconnecting… self-
+  recovers with capped backoff); removed the onCleared teardown from `ChatViewModel`. `./gradlew
+  assembleDebug` BUILD SUCCESSFUL on the pinned JDK (Android Studio JBR). Two-emulator test: A and B open
+  the same chat → A sends → B sees it appear LIVE without leaving, and vice versa; back out and re-enter
+  still works; kill+restart the backend briefly → "Reconnecting…" clears on its own and live delivery
+  resumes.
+
 - 2026-07-19 — Owner "my listings" endpoints + My Rides data-source fix. BACKEND: new
   `GET /api/offers/mine` and `GET /api/requests/mine` (auth required via `anyRequest().authenticated()`;
   each returns ONLY the caller's own rows). Unlike the browse feed these apply NO filtering — every
